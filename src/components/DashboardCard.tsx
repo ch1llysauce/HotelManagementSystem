@@ -15,7 +15,7 @@ export default function DashboardCard({
 }: DashboardCardProps) {
   return (
     <Link to={link}>
-      <div className="relative flex flex-col items-center justify-center p-8 bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 cursor-pointer text-center">
+      <div className="relative flex flex-col items-center justify-center p-8 bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 cursor-pointer text-center w-40 h-40 md:w-56 md:h-48">
         {/* Gradient Overlay */}
         <div
           className={`absolute inset-0 rounded-3xl bg-gradient-to-r ${color} opacity-10`}

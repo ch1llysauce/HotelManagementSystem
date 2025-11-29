@@ -1,4 +1,5 @@
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { Route, Routes } from 'react-router-dom';
+import Layout from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
 import CheckIn from "./pages/CheckIn";
 import CheckOut from "./pages/CheckOut";
@@ -7,7 +8,7 @@ import Guests from "./pages/Guests";
 
 export default function AppRoutes() {
   return (
-    <BrowserRouter>
+    <Layout>
     <Routes>
         <Route path="/" element={<Dashboard />} />
         <Route path="/checkin" element={<CheckIn />} />
@@ -15,6 +16,6 @@ export default function AppRoutes() {
         <Route path="/rooms" element={<Rooms />} />
         <Route path="/guests" element={<Guests />} />
     </Routes>
-    </BrowserRouter>
+    </Layout>
     );
 }

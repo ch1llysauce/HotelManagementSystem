@@ -5,10 +5,13 @@ export interface Room {
 }
 
 export interface Guest {
-  id: string;
+   id: string;
   name: string;
-  roomNumber: string;
-  checkedIn: boolean; 
+  email: string;
+  phone: string;
+  room: string;
+  checkedIn: boolean;
+  timestamp?: any;
 }
 
 export interface CheckOut {
