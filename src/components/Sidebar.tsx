@@ -41,7 +41,7 @@ export default function Sidebar({ visible, onClose }: SidebarProps) {
         <SidebarItem label="Check In" to="/checkin" />
         <SidebarItem label="Guests" to="/guests" />
         <SidebarItem label="Rooms" to="/rooms" />
-        <SidebarItem label="History" to="/history" />
+        <SidebarItem label="Archived Guests" to="/archived-guests" />
         <SidebarItem label="Settings" to="/settings" />
       </nav>
 

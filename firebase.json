@@ -23,6 +23,11 @@
     {
       "source": "functions",
       "codebase": "default",
+      "runtime": "nodejs24",
+      "secrets": [
+        "EMAIL_USER",
+        "EMAIL_PASS"
+      ],
       "disallowLegacyRuntimeConfig": true,
       "ignore": [
         "node_modules",

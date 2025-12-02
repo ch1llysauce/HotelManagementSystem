@@ -1,3 +1,5 @@
+import firebase from "firebase/compat/app";
+
 export interface Room {
   id: string;
   name: string;
@@ -18,6 +20,10 @@ export interface Guest {
   deposit?: number;
   balance?: number;
   checkedOutAt?: any;
+}
+
+export interface ArchivedGuest extends Guest {
+  archivedAt: firebase.firestore.Timestamp;
 }
 
 export interface CheckOut {

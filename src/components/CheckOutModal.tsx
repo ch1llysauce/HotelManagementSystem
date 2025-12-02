@@ -9,6 +9,7 @@ import {
   collection,
   query,
   where,
+  addDoc,
 } from "firebase/firestore";
 import { db } from "../firebase/firebaseConfig";
 import type { Guest } from "../types";
@@ -111,6 +112,17 @@ export default function CheckoutModal({ guestId, onClose }: CheckoutModalProps) 
         checkedIn: false,
         checkedOutAt: serverTimestamp(),
         balance: 0,
+      });
+
+      await addDoc(collection(db, "logs"), {
+        action: "check-out",
+        guestId: guest.id,
+        timestamp: serverTimestamp(),
+      });
+
+      await addDoc(collection(db, "archivedGuests"), {
+        ...guest,
+        archivedAt: serverTimestamp(),
       });
 
       alert(`Guest ${guest.name} successfully checked out.`);
