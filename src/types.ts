@@ -12,6 +12,12 @@ export interface Guest {
   room: string;
   checkedIn: boolean;
   timestamp?: any;
+  checkInDate?: string;
+  checkOutDate?: string;
+  extras?: number;
+  deposit?: number;
+  balance?: number;
+  checkedOutAt?: any;
 }
 
 export interface CheckOut {

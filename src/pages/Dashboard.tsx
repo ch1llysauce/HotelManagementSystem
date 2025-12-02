@@ -1,5 +1,5 @@
 import DashboardCard from '../components/DashboardCard';
-import { FiUsers, FiHome, FiCheckCircle, FiLogOut } from 'react-icons/fi';
+import { FiUsers, FiHome, FiCheckCircle } from 'react-icons/fi';
 
 export default function Dashboard() {
     return (
@@ -24,22 +24,16 @@ export default function Dashboard() {
                     color="from-green-400 to-green-600"
                 />
                 <DashboardCard
-                    title="Check-Out"
-                    link="/checkout"
-                    icon={<FiLogOut size={28} />}
-                    color="from-red-400 to-red-600"
+                    title="Guest List"
+                    link="/guests"
+                    icon={<FiUsers size={28} />}
+                    color="from-blue-400 to-blue-600"
                 />
                 <DashboardCard
                     title="Room Status"
                     link="/rooms"
                     icon={<FiHome size={28} />}
                     color="from-yellow-400 to-yellow-600"
-                />
-                <DashboardCard
-                    title="Guest List"
-                    link="/guests"
-                    icon={<FiUsers size={28} />}
-                    color="from-blue-400 to-blue-600"
                 />
             </div>
         </div>

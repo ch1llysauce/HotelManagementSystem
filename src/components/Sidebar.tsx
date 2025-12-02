@@ -39,9 +39,10 @@ export default function Sidebar({ visible, onClose }: SidebarProps) {
       <nav className="space-y-2">
         <SidebarItem label="Dashboard" to="/" />
         <SidebarItem label="Check In" to="/checkin" />
-        <SidebarItem label="Check Out" to="/checkout" />
         <SidebarItem label="Guests" to="/guests" />
         <SidebarItem label="Rooms" to="/rooms" />
+        <SidebarItem label="History" to="/history" />
+        <SidebarItem label="Settings" to="/settings" />
       </nav>
 
       <button className="mt-8 bg-black w-full py-2 rounded text-white">Logout</button>

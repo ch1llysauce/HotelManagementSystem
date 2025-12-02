@@ -1,20 +1,29 @@
 import { useState, useRef } from "react";
-import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
 import { db } from "../firebase/firebaseConfig";
+import { recordPayment } from "../utils/payments"; 
 import { collection, addDoc, serverTimestamp, query, where, getDocs } from "firebase/firestore";
 
 export default function CheckIn() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [countryISO, setCountryISO] = useState("");
   const [email, setEmail] = useState("");
   const [room, setRoom] = useState("");
   const [checkInDate, setCheckInDate] = useState("");
   const [checkOutDate, setCheckOutDate] = useState("");
   const [notes, setNotes] = useState("");
+  const [deposit, setDeposit] = useState("");
+  const [depositMethod, setDepositMethod] = useState("card");
   const [loading, setLoading] = useState(false);
   const phoneInputRef = useRef<HTMLInputElement>(null);
+
+  const roomRate = 1000; // placeholder room price per night
+
+  const nights =
+    checkInDate && checkOutDate
+      ? (new Date(checkOutDate).getTime() - new Date(checkInDate).getTime()) /
+      (1000 * 60 * 60 * 24)
+      : 0;
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -29,7 +38,7 @@ export default function CheckIn() {
     let sanitized = phone.replace(/[^\d+]/g, "");
     const dialCodeMatch = sanitized.match(/^\+(\d{1,3})/);
     const countryCode = dialCodeMatch ? dialCodeMatch[1] : "";
-    let localNumber = sanitized.replace(`+${countryCode}`, "");
+    let localNumber = sanitized.replace(`+${dialCodeMatch ? countryCode : ""}`, "");
 
     if (trunkZeroDialCodes.includes(countryCode) && localNumber.startsWith("0")) {
       localNumber = localNumber.slice(1);
@@ -37,6 +46,12 @@ export default function CheckIn() {
 
     const finalPhone = `+${countryCode}${localNumber}`;
     console.log("Sanitized Phone:", finalPhone);
+
+    if (finalPhone.replace(/\D/g, "").length < 10) {
+      alert("Please enter a valid phone number.");
+      phoneInputRef.current?.focus();
+      return;
+    }
 
     try {
       const emailQuery = query(collection(db, "guests"), where("email", "==", email));
@@ -72,11 +87,6 @@ Notes: ${notes || "None"}
       return; // User cancelled
     }
 
-    if (phone.length < 10) {
-      alert("Please enter a valid 11-digit phone number.");
-      return;
-    }
-
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       alert("Please enter a valid email address.");
       return;
@@ -94,34 +104,60 @@ Notes: ${notes || "None"}
     }
     setLoading(true);
 
-    //Store guest data in Firestore
-    try {
-      await addDoc(collection(db, "guests"), {
-        name,
-        phone: finalPhone,
-        email,
-        room,
-        checkInDate,
-        checkOutDate,
-        notes,
-        checkedIn: true,
-        timestamp: serverTimestamp(),
-      });
+    const depositAmount = Number(deposit);
+    const depositSuccess = await processPayment(deposit, depositMethod, name);
 
-      alert(`Guest "${name}" checked in successfully!`);
-      setName("");
-      setPhone("");
-      setEmail("");
-      setRoom("");
-      setCheckInDate("");
-      setCheckOutDate("");
-      setNotes("");
-    } catch (error) {
-      console.error(error);
-      alert("Failed to check in guest. Try again.");
-    } finally {
-      setLoading(false);
+    if (depositSuccess) {
+      //Store guest data in Firestore
+      try {
+        const guestDoc = await addDoc(collection(db, "guests"), {
+          name,
+          phone: finalPhone,
+          email: email,
+          room,
+          checkInDate: checkInDate,
+          checkOutDate: checkOutDate,
+          notes,
+          deposit: depositAmount,
+          extras: 0,
+          checkedIn: true,
+          timestamp: serverTimestamp(),
+        });
+
+        const totalCost = roomRate * nights;
+        const fullyPaid = depositAmount >= totalCost;
+
+        await recordPayment(
+          guestDoc.id, 
+          depositAmount, 
+          depositMethod, 
+          "deposit",
+          fullyPaid ? "completed" : "pending"
+        );
+
+
+        alert(`Guest "${name}" checked in successfully!`);
+        setName("");
+        setPhone("");
+        setEmail("");
+        setRoom("");
+        setCheckInDate("");
+        setCheckOutDate("");
+        setDeposit("");
+        setDepositMethod("");
+        setNotes("");
+      } catch (error) {
+        console.error(error);
+        alert("Failed to check in guest. Try again.");
+      } finally {
+        setLoading(false);
+      }
     }
+  }
+
+  async function processPayment(amount: string, method: string, guestId: typeof name): Promise<boolean> {
+    console.log("Processing payment:", amount, method, guestId);
+    return true;
   }
 
   return (
@@ -148,37 +184,24 @@ Notes: ${notes || "None"}
             }}
           />
 
-          <PhoneInput
-            country={countryISO || ""}
+          <input
+            type="tel"
+            id="phone"
+            name="phone"
+            placeholder="9123456789 or +639123456789"
             value={phone}
-            onChange={(value, data: any) => {
-              setPhone(value);
-              if (data?.countryCode) {
-                setCountryISO(data.countryCode);
+            onChange={(e) => {
+              let value = e.target.value;
+              if (value.startsWith("+")) {
+                value = "+" + value.slice(1, 16).replace(/\D/g, "");
               } else {
-                // If user typed a full number with +<code>, auto-detect ISO2
-                const dialCodeMatch = value.replace(/[^\d+]/g, "").match(/^\+(\d{1,3})/);
-                if (dialCodeMatch) {
-                  const dialCode = dialCodeMatch[1];
-                  // react-phone-input-2 exposes all countries internally
-                  const country = require("react-phone-input-2/dist/lib/countries").find(
-                    (c: any) => c.dialCode === dialCode
-                  );
-                  if (country) setCountryISO(country.iso2);
-                }
+                value = value.slice(0, 10).replace(/\D/g, "");
               }
+              setPhone(value);
             }}
-            inputProps={{
-              name: "phone",
-              ref: phoneInputRef,
-              className:
-                "border border-gray-300 rounded-lg p-3 pl-16 focus:outline-none focus:ring-2 focus:ring-blue-400 w-full",
-            }}
-            countryCodeEditable={true}
-            enableAreaCodes
-            disableCountryGuess={false}
-            specialLabel="Phone"
+            className="w-full px-4 py-2 rounded-lg border"
           />
+          <small className="text-gray-400">Include country code for international guests</small>
 
           <input
             type="email"
@@ -235,6 +258,27 @@ Notes: ${notes || "None"}
               />
             </div>
           </div>
+
+          <input
+            type="number"
+            placeholder="Deposit Amount"
+            value={deposit}
+            onChange={(e) => setDeposit(e.target.value)}
+            className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          />
+
+          <select
+            value={depositMethod}
+            onChange={(e) => setDepositMethod(e.target.value)}
+            className="w-full px-4 py-2 rounded-lg border"
+          >
+            <option value="card">Card</option>
+            <option value="cash">Cash</option>
+          </select>
+
+          <p className="text-gray-600 mt-2">
+            Estimated total: ₱{roomRate * nights} (Deposit: ₱{deposit})
+          </p>
 
           <textarea
             className="border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-400"
