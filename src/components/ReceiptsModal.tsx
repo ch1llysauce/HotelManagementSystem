@@ -1,5 +1,7 @@
 import { useRef } from "react";
 import type { ArchivedGuest } from "../types";
+import { Timestamp } from "firebase/firestore";
+
 interface ReceiptModalProps {
   guest: ArchivedGuest;
   onClose: () => void;
@@ -7,6 +9,11 @@ interface ReceiptModalProps {
 
 export default function ReceiptModal({ guest, onClose }: ReceiptModalProps) {
   const receiptRef = useRef<HTMLDivElement>(null);
+  const formatDate = (ts?: Timestamp | string) => {
+    if (!ts) return "-";
+    if (typeof ts === "string") return ts;
+    return ts.toDate().toLocaleDateString();
+  };
 
   const handlePrint = () => {
     if (!receiptRef.current) return;
@@ -19,19 +26,39 @@ export default function ReceiptModal({ guest, onClose }: ReceiptModalProps) {
     }
   };
 
-  const handleEmail = () => {
-    // Optional: integrate Firebase Functions or external service to send email
-    alert("Email functionality not implemented yet.");
-  };
+  const handleEmail = async () => {
+  if (!receiptRef.current) return;
 
+  const htmlContent = receiptRef.current.innerHTML;
+
+  try {
+    const res = await fetch("https://sendreceipt-6ixp46nnya-as.a.run.app", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        to: guest.email,
+        subject: "Your Hotel Receipt",
+        html: htmlContent,
+      }),
+    });
+
+    const data = await res.json();
+    console.log("Email sent:", data);
+    alert(data.success ? "Receipt emailed successfully!" : "Failed to send email");
+  } catch (err) {
+    console.error(err);
+    alert("Error sending receipt email");
+  }
+};
+  
   const parseDate = (dateStr?: string) => (dateStr ? new Date(dateStr + "T00:00") : null);
-  const checkInDate = parseDate(guest.checkInDate)?.toLocaleDateString() ?? "-";
-  const checkOutDate = parseDate(guest.checkOutDate)?.toLocaleDateString() ?? "-";
+  const checkInDate = formatDate(guest.checkInDate);
+  const checkOutDate = formatDate(guest.checkOutDate);
   const nights = Math.max(
     0,
     Math.round(
-      ((parseDate(guest.checkOutDate)?.getTime() ?? 0) - (parseDate(guest.checkInDate)?.getTime() ?? 0)) /
-        (1000 * 60 * 60 * 24)
+      ((parseDate(formatDate(guest.checkOutDate))?.getTime() ?? 0) - (parseDate(formatDate(guest.checkInDate))?.getTime() ?? 0)) /
+      (1000 * 60 * 60 * 24)
     )
   );
 
@@ -56,7 +83,7 @@ export default function ReceiptModal({ guest, onClose }: ReceiptModalProps) {
           <h2 className="text-2xl font-bold text-center text-black">Hotel Receipt</h2>
           <div className="border-t border-gray-200 pt-4">
             <p><strong className="text-black">Name:</strong><span className="text-gray-700">{guest.name}</span></p>
-            <p><strong className="text-black">Room:</strong> <span className="text-gray-700">{guest.room}</span></p>
+            <p><strong className="text-black">Room:</strong> <span className="text-gray-700">{guest.roomNumber}</span></p>
             <p><strong className="text-black">Check-In:</strong> <span className="text-gray-700">{checkInDate}</span></p>
             <p><strong className="text-black">Check-Out:</strong> <span className="text-gray-700">{checkOutDate}</span></p>
             <p><strong className="text-black">Nights:</strong> <span className="text-gray-700">{nights}</span></p>

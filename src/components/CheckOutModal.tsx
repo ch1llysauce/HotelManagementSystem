@@ -10,6 +10,7 @@ import {
   query,
   where,
   addDoc,
+  Timestamp
 } from "firebase/firestore";
 import { db } from "../firebase/firebaseConfig";
 import type { Guest } from "../types";
@@ -17,22 +18,38 @@ import CheckoutConfirmModal from "./CheckOutConfirmModal";
 
 interface CheckoutModalProps {
   guestId: string;
+  roomId: string;
   onClose: () => void;
 }
 
-export default function CheckoutModal({ guestId, onClose }: CheckoutModalProps) {
+export default function CheckoutModal({ guestId, roomId, onClose }: CheckoutModalProps) {
   const [guest, setGuest] = useState<Guest | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "card" | "gcash">("cash");
   const [paymentStatus, setPaymentStatus] = useState<"pending" | "completed">("pending");
   const [loading, setLoading] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [balance, setBalance] = useState(0);
+  const [roomRate, setRoomRate] = useState(0);
+  /* ------------------- */
+  /* Helper: Calculate nights */
+  /* ------------------- */
+  function calculateNights(checkIn?: Timestamp | string, checkOut?: Timestamp | string) {
+    if (!checkIn || !checkOut) return 0;
+    const inDate = new Date(checkIn instanceof Timestamp ? checkIn.toDate() : (checkIn + "T00:00"));
+    const outDate = new Date(checkOut instanceof Timestamp ? checkOut.toDate() : (checkOut + "T00:00"));
+    const diffTime = outDate.getTime() - inDate.getTime();
+    const diffDays = Math.max(0, Math.round(diffTime / (1000 * 60 * 60 * 24)));
 
-  const roomRate = 1000;
+    return diffDays;
+  }
 
-  // Fetch guest and payment status
+  /* ------------------- */
+  /* Fetch Guest & Balance */
+  /* ------------------- */
   useEffect(() => {
     async function fetchGuestAndPayment() {
       try {
+        // Fetch Guest
         const guestRef = doc(db, "guests", guestId);
         const guestSnap = await getDoc(guestRef);
 
@@ -45,30 +62,55 @@ export default function CheckoutModal({ guestId, onClose }: CheckoutModalProps) 
         const guestData = { id: guestSnap.id, ...guestSnap.data() } as Guest;
         setGuest(guestData);
 
-        // Calculate payment status
+        // Fetch Room (room rate)
+        let fetchedRoomRate = 0;
+        if (guestData.roomId) {
+          const roomSnap = await getDoc(doc(db, "rooms", guestData.roomId));
+          if (roomSnap.exists()) {
+            fetchedRoomRate = Number(roomSnap.data().price ?? 0);
+          }
+        }
+        setRoomRate(fetchedRoomRate);
+
+        // Fetch Payments
         const paymentsQuery = query(
           collection(db, "payments"),
           where("guestId", "==", guestId)
         );
         const paymentsSnap = await getDocs(paymentsQuery);
 
-        let totalPaid = 0;
+        let paymentsTotal = 0;
         paymentsSnap.forEach(doc => {
-          const data = doc.data();
-          totalPaid += data.amount ?? 0;
+          paymentsTotal += Number(doc.data().amount ?? 0);
         });
 
-        const checkInDate = new Date(guestData.checkInDate + "T00:00");
-        const checkOutDate = new Date(guestData.checkOutDate + "T00:00");
-        const nights = Math.max(0, Math.round((checkOutDate.getTime() - checkInDate.getTime()) / (1000*60*60*24)));
-        const extras = guestData.extras ?? 0;
-        const totalCost = nights * roomRate + extras;
+        // Calculations
+        const nights = calculateNights(
+          guestData.checkInDate,
+          guestData.checkOutDate
+        );
 
-        setPaymentStatus(totalPaid >= totalCost ? "completed" : "pending");
+
+        const totalCost = nights * fetchedRoomRate;
+        const totalPaid = paymentsTotal;
+        const balance = totalCost - totalPaid;
+
+        // Update UI State
+        setBalance(balance > 0 ? balance : 0);
+        setPaymentStatus(balance <= 0 ? "completed" : "pending");
+
+        // Optional debug
+        console.log({
+          nights,
+          fetchedRoomRate,
+          totalCost,
+          totalPaid,
+          balance
+        });
 
       } catch (error) {
-        console.error("Error fetching guest or payments:", error);
-        alert("Failed to fetch guest data.");
+        console.error("Error fetching guest/payment data:", error);
+        alert("Failed to load billing data.");
         onClose();
       }
     }
@@ -76,50 +118,58 @@ export default function CheckoutModal({ guestId, onClose }: CheckoutModalProps) 
     fetchGuestAndPayment();
   }, [guestId, onClose]);
 
+  /* ------------------- */
+  /* Null-safe calculations for UI */
+  /* ------------------- */
+  const nights = guest ? calculateNights(guest.checkInDate, guest.checkOutDate) : 0;
+  const depositPaid = Number(guest?.deposit ?? 0);
+  const roomCharges = nights * roomRate;
+
   if (!guest) return null;
 
-  const parseDate = (dateStr?: string) => (dateStr ? new Date(dateStr + "T00:00") : null);
-  const checkInDate = parseDate(guest.checkInDate);
-  const checkOutDate = parseDate(guest.checkOutDate);
-
-  const nights =
-    checkInDate && checkOutDate
-      ? Math.max(0, Math.round((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24)))
-      : 0;
-
-  const extras = guest.extras ?? 0;
-  const depositPaid = guest.deposit ?? 0;
-
-  const roomCharges = nights * roomRate;
-  const totalDue = roomCharges + extras - depositPaid;
-
+  /* ------------------- */
+  /* Checkout Handler */
+  /* ------------------- */
   async function handleCheckout() {
-    if (!guest) return;
-    if (!guest.id) return alert("Guest ID missing");
-    if (nights <= 0) return alert("Invalid check-in/check-out dates");
+    if (!guest || !guest.id) return alert("Guest ID missing");
+    if (!guest.roomId) return alert("Guest room information missing");
+    if (nights <= 0) return alert("Invalid stay duration");
 
     setLoading(true);
 
     try {
-      const totalCost = roomCharges + extras;
-      const remainingPayment = Math.max(0, totalCost - depositPaid);
-
-      if (remainingPayment > 0) {
-        await recordPayment(guest.id, remainingPayment, paymentMethod, "full", "completed");
+      // Only record a payment if there's a remaining balance
+      if (balance > 0) {
+        await recordPayment(
+          guest.id,
+          balance,
+          paymentMethod,
+          "full", // you can change "full" to "remaining" for clarity
+          "completed"
+        );
       }
 
+      // Update guest record
       await updateDoc(doc(db, "guests", guest.id), {
         checkedIn: false,
         checkedOutAt: serverTimestamp(),
-        balance: 0,
+        balance: 0, // reset balance after checkout
       });
 
+      // Update room status
+      await updateDoc(doc(db, "rooms", guest.roomId), {
+        status: "Cleaning",
+        guestId: null,
+      });
+
+      // Add logs
       await addDoc(collection(db, "logs"), {
         action: "check-out",
         guestId: guest.id,
         timestamp: serverTimestamp(),
       });
 
+      // Archive guest
       await addDoc(collection(db, "archivedGuests"), {
         ...guest,
         archivedAt: serverTimestamp(),
@@ -135,6 +185,9 @@ export default function CheckoutModal({ guestId, onClose }: CheckoutModalProps) 
     }
   }
 
+  /* ------------------- */
+  /* UI */
+  /* ------------------- */
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
       <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-lg animate-fadeIn">
@@ -150,25 +203,28 @@ export default function CheckoutModal({ guestId, onClose }: CheckoutModalProps) 
 
         {paymentStatus === "pending" && (
           <div className="mb-4 p-3 rounded-lg bg-yellow-100 text-yellow-800 font-medium">
-            Pending Balance — Payment Not Fully Completed
+            Pending Balance — Payment Required
           </div>
         )}
 
         <div className="space-y-2 text-lg text-gray-700">
           <p><strong>Nights:</strong> {nights}</p>
           <p><strong>Room Charges:</strong> ₱{roomCharges}</p>
-          <p><strong>Extras:</strong> ₱{extras}</p>
           <p><strong>Deposit Paid:</strong> ₱{depositPaid}</p>
           <p className="text-xl mt-4 font-bold">
-            Total Due: <span className="text-blue-600">₱{totalDue}</span>
+            Total Due: <span className="text-blue-600">₱{balance}</span>
           </p>
         </div>
 
         <div className="mt-6">
-          <label className="block text-gray-600 mb-1 font-medium">Payment Method</label>
+          <label className="block text-gray-600 mb-1 font-medium">
+            Payment Method
+          </label>
           <select
             value={paymentMethod}
-            onChange={(e) => setPaymentMethod(e.target.value as "cash" | "card" | "gcash")}
+            onChange={(e) =>
+              setPaymentMethod(e.target.value as "cash" | "card" | "gcash")
+            }
             className="w-full border rounded-lg p-2"
           >
             <option value="cash">Cash</option>
@@ -205,7 +261,6 @@ export default function CheckoutModal({ guestId, onClose }: CheckoutModalProps) 
           }}
         />
       )}
-
     </div>
   );
 }

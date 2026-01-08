@@ -1,25 +1,39 @@
 import firebase from "firebase/compat/app";
 
+export type RoomStatus = "Available" | "Occupied" | "Reserved" | "Cleaning";
+
 export interface Room {
-  id: string;
-  name: string;
-  status: string;
+  number: number;
+  type: "Single" | "Double" | "Deluxe";
+  price: number;
+  floor: number;
+  description?: string;
+  status: RoomStatus;
+  assignedGuestId: string | null;
+  createdAt?: Date;
 }
+
+export interface RoomDocument extends Room {
+  id: string;
+}
+
+
 
 export interface Guest {
    id: string;
   name: string;
   email: string;
   phone: string;
-  room: string;
+  roomId: string;
+  roomNumber: number;
   checkedIn: boolean;
-  timestamp?: any;
+  checkedOut: boolean;
   checkInDate?: string;
   checkOutDate?: string;
+
   extras?: number;
   deposit?: number;
   balance?: number;
-  checkedOutAt?: any;
 }
 
 export interface ArchivedGuest extends Guest {

@@ -1,14 +1,17 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import "react-phone-input-2/lib/style.css";
 import { db } from "../firebase/firebaseConfig";
-import { recordPayment } from "../utils/payments"; 
+import { recordPayment } from "../utils/payments";
+import { updateRoom, listenToRooms } from "../utils/rooms.service";
+import { RoomDocument } from "../types";
 import { collection, addDoc, serverTimestamp, query, where, getDocs } from "firebase/firestore";
 
 export default function CheckIn() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
-  const [room, setRoom] = useState("");
+  const [rooms, setRooms] = useState<RoomDocument[]>([]);
+  const [selectedRoomId, setSelectedRoomId] = useState<string>("");
   const [checkInDate, setCheckInDate] = useState("");
   const [checkOutDate, setCheckOutDate] = useState("");
   const [notes, setNotes] = useState("");
@@ -16,8 +19,8 @@ export default function CheckIn() {
   const [depositMethod, setDepositMethod] = useState("card");
   const [loading, setLoading] = useState(false);
   const phoneInputRef = useRef<HTMLInputElement>(null);
-
-  const roomRate = 1000; // placeholder room price per night
+  const selectedRoom = rooms.find(r => r.id === selectedRoomId);
+  const roomRate = selectedRoom?.price ?? 0;
 
   const nights =
     checkInDate && checkOutDate
@@ -25,10 +28,21 @@ export default function CheckIn() {
       (1000 * 60 * 60 * 24)
       : 0;
 
+  const depositAmount = Number(deposit);
+  const totalCost = roomRate * nights;
+  const isDepositTooHigh = depositAmount > totalCost && totalCost > 0;
+  const today = new Date().toISOString().split("T")[0];
+
+  useEffect(() => {
+    if (checkOutDate && checkInDate && new Date(checkOutDate) <= new Date(checkInDate)) {
+      setCheckOutDate("");
+    }
+  }, [checkInDate]);
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
-    if (!name || !phone || !email || !room || !checkInDate || !checkOutDate) {
+    if (!name || !phone || !email || !selectedRoom || !checkInDate || !checkOutDate) {
       alert("Please fill in all fields.");
       return;
     }
@@ -76,7 +90,7 @@ Please confirm the following details:
 Name: ${name}
 Phone: ${finalPhone}
 Email: ${email}
-Room: ${room}
+Room: ${selectedRoom.number} (${selectedRoom.type})
 Check-In Date: ${checkInDate}
 Check-Out Date: ${checkOutDate}
 Notes: ${notes || "None"}
@@ -96,16 +110,19 @@ Notes: ${notes || "None"}
       alert("Check-out date must be after check-in date.");
       return;
     }
-
-    // Optional: Validate room number (numeric only)
-    if (!/^\d+$/.test(room)) {
-      alert("Please enter a valid room number.");
-      return;
-    }
     setLoading(true);
 
-    const depositAmount = Number(deposit);
     const depositSuccess = await processPayment(deposit, depositMethod, name);
+
+    if (depositAmount < 0) {
+      alert("Deposit amount cannot be negative.");
+      return;
+    }
+
+    if (depositAmount > roomRate * nights) {
+      alert("Deposit cannot exceed total room cost.");
+      return;
+    }
 
     if (depositSuccess) {
       //Store guest data in Firestore
@@ -114,7 +131,8 @@ Notes: ${notes || "None"}
           name,
           phone: finalPhone,
           email: email,
-          room,
+          roomId: selectedRoom.id,
+          roomNumber: selectedRoom.number,
           checkInDate: checkInDate,
           checkOutDate: checkOutDate,
           notes,
@@ -124,13 +142,25 @@ Notes: ${notes || "None"}
           timestamp: serverTimestamp(),
         });
 
-        const totalCost = roomRate * nights;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const checkIn = new Date(checkInDate);
+        checkIn.setHours(0, 0, 0, 0);
+
+        const status = checkIn.getTime() === today.getTime() ? "Occupied" : "Reserved";
+
+        await updateRoom(selectedRoom.id, {
+          status: status,
+          assignedGuestId: guestDoc.id,
+        });
+
         const fullyPaid = depositAmount >= totalCost;
 
         await recordPayment(
-          guestDoc.id, 
-          depositAmount, 
-          depositMethod, 
+          guestDoc.id,
+          depositAmount,
+          depositMethod,
           "deposit",
           fullyPaid ? "completed" : "pending"
         );
@@ -140,7 +170,7 @@ Notes: ${notes || "None"}
         setName("");
         setPhone("");
         setEmail("");
-        setRoom("");
+        setSelectedRoomId("");
         setCheckInDate("");
         setCheckOutDate("");
         setDeposit("");
@@ -159,6 +189,18 @@ Notes: ${notes || "None"}
     console.log("Processing payment:", amount, method, guestId);
     return true;
   }
+
+  useEffect(() => {
+    const unsub = listenToRooms((snapshot: any) => {
+      const data = snapshot.docs.map((doc: any) => ({
+        ...(doc.data()),
+        id: doc.id,
+      }));
+      setRooms(data);
+    });
+    return unsub;
+  }, []);
+
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-10 bg-gray-50">
@@ -211,17 +253,21 @@ Notes: ${notes || "None"}
             onChange={(e) => setEmail(e.target.value)}
           />
 
-          <input
-            type="text"
-            className="border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-400"
-            placeholder="Room Number"
-            value={room}
-            onChange={(e) => {
-              const sanitized = e.target.value.replace(/\D/g, "");
-              setRoom(sanitized);
-            }}
-            maxLength={5}
-          />
+          <select
+            value={selectedRoomId}
+            onChange={(e) => setSelectedRoomId(e.target.value)}
+            className="border border-gray-300 rounded-lg p-3"
+          >
+            <option value="">Select Available Room</option>
+            {rooms
+              .filter(room => room.status === "Available")
+              .map(room => (
+                <option key={room.id} value={room.id}>
+                  Room {room.number} — {room.type} — ₱{room.price}
+                </option>
+              ))}
+          </select>
+
 
           <div className="flex gap-4">
             {/* Check-In Date */}
@@ -235,6 +281,7 @@ Notes: ${notes || "None"}
               <input
                 id="checkInDate"
                 type="date"
+                min={today}
                 className="border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"
                 value={checkInDate}
                 onChange={(e) => setCheckInDate(e.target.value)}
@@ -252,6 +299,7 @@ Notes: ${notes || "None"}
               <input
                 id="checkOutDate"
                 type="date"
+                min={checkInDate || today}
                 className="border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"
                 value={checkOutDate}
                 onChange={(e) => setCheckOutDate(e.target.value)}
@@ -263,9 +311,29 @@ Notes: ${notes || "None"}
             type="number"
             placeholder="Deposit Amount"
             value={deposit}
-            onChange={(e) => setDeposit(e.target.value)}
-            className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            min={0}
+            max={totalCost || undefined}
+            onChange={(e) => {
+              const value = Number(e.target.value);
+
+              if (value > totalCost) {
+                setDeposit(String(totalCost));
+                return;
+              }
+
+              setDeposit(e.target.value);
+            }}
+            className={`border rounded-lg p-3 focus:outline-none focus:ring-2
+      ${isDepositTooHigh
+                ? "border-red-500 focus:ring-red-400"
+                : "border-gray-300 focus:ring-blue-400"
+              }`}
           />
+          {isDepositTooHigh && (
+            <p className="text-sm text-red-600 mt-1">
+              Deposit cannot exceed total cost (₱{totalCost})
+            </p>
+          )}
 
           <select
             value={depositMethod}
@@ -289,7 +357,7 @@ Notes: ${notes || "None"}
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || isDepositTooHigh}
             className="bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-lg transition-all duration-200 disabled:opacity-50"
           >
             {loading ? "Checking In..." : "Check-In"}

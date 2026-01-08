@@ -13,7 +13,7 @@ export default function EditGuestModal({ guest, onClose, onSave }: EditGuestModa
     name: "",
     email: "",
     phone: "",
-    room: "",
+    roomNumber: "",
   });
 
   useEffect(() => {
@@ -22,7 +22,7 @@ export default function EditGuestModal({ guest, onClose, onSave }: EditGuestModa
         name: guest.name ?? "",
         email: guest.email ?? "",
         phone: guest.phone ?? "",
-        room: guest.room ?? "",
+        roomNumber: String(guest.roomNumber ?? ""),
       });
     }
   }, [guest]);
@@ -68,24 +68,26 @@ export default function EditGuestModal({ guest, onClose, onSave }: EditGuestModa
             />
           </div>
 
-          {/* Room */}
+          {/* Room Number 
           <div className="space-y-1">
             <label className="text-gray-500 text-lg md:text-xl">Room Number</label>
             <input
               className="w-full px-4 py-2 rounded-lg border dark:border-gray-700 dark:bg-gray-800"
-              value={form.room}
+              value={form.roomNumber}
               placeholder="12345"
-              onChange={(e) => setForm((s) => ({ ...s, room: e.target.value }))}
+              onChange={(e) => setForm((s) => ({ ...s, roomNumber: e.target.value }))}
             />
           </div>
+          */}
         </div>
+        
 
         <div className="flex justify-end gap-3 mt-6">
           <button onClick={onClose} className="px-4 py-2 rounded-lg bg-gray-300 dark:bg-gray-700">
             Cancel
           </button>
           <button
-            onClick={() => onSave({ ...guest, ...form })}
+            onClick={() => onSave({ ...guest, ...form, roomNumber: Number(form.roomNumber) })}
             className="px-4 py-2 rounded-lg bg-blue-600 text-white"
           >
             Save

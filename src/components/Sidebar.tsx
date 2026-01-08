@@ -42,6 +42,7 @@ export default function Sidebar({ visible, onClose }: SidebarProps) {
         <SidebarItem label="Guests" to="/guests" />
         <SidebarItem label="Rooms" to="/rooms" />
         <SidebarItem label="Archived Guests" to="/archived-guests" />
+        <SidebarItem label="Housekeeping" to="/housekeeping" />
         <SidebarItem label="Settings" to="/settings" />
       </nav>
 

@@ -1,32 +1,49 @@
-import { useEffect, useState } from 'react';
-import { db } from '../firebase/firebaseConfig';
-import { collection, onSnapshot, QuerySnapshot, type DocumentData } from 'firebase/firestore';
-import RoomCard from "../components/RoomCard";
-import type { Room } from '../types';
+import { useEffect, useState } from "react";
+import { addRoom, updateRoom, deleteRoomById, listenToRooms } from "../utils/rooms.service";
+import { RoomDocument, Room } from "../types";
+import { AddRoomForm } from "../components/AddRoomForm";
+import { RoomsOverview } from "../components/RoomsOverview";
+import { RoomsByFloor } from "../components/RoomsByFloor";
+import { autoUpdateReservedRooms } from "../utils/roomAutoStatus";
+import { seedRooms } from "../utils/seedRooms";
 
-export default function Rooms() {
-    const [rooms, setRooms] = useState<Room[]>([]);
+export default function RoomsPage() {
+  const [rooms, setRooms] = useState<RoomDocument[]>([]);
 
-    useEffect(() => {
-        return onSnapshot(collection(db, 'rooms'), (snapshot: QuerySnapshot<DocumentData>) => {
-            const roomsData: Room[] = snapshot.docs.map((doc) => ({
-                id: doc.id,
-                name: doc.data().name as string,     // type assertion
-                status: doc.data().status as string, // type assertion
-            }));
-            setRooms(roomsData);
-        });
-    }, []);
+  useEffect(() => {
+    autoUpdateReservedRooms();
+    // Listen to rooms
+    const unsub = listenToRooms((snapshot: { docs: any[]; }) => {
+      const data = snapshot.docs.map(doc => ({
+        ...(doc.data() as Room),
+        id: doc.id,
+      }));
+      setRooms(data);
+    });
+    return unsub;
+  }, []);
 
-    return (
-        <div className="p-10">
-            <h1 className="text-2xl font-bold mb-6">Room Status</h1>
+  return (
+    <div className="p-6">
+      <h1 className="text-2xl font-bold mb-4">Rooms Management</h1>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {rooms.map((room) => (
-                    <RoomCard key={room.id} room={room} />
-                ))}
-            </div>
-        </div>
-    );
+      <RoomsOverview rooms={rooms} />
+
+      <AddRoomForm onAdd={addRoom} />
+
+      <RoomsByFloor
+        rooms={rooms}
+        onStatusChange={(id, status) => updateRoom(id, { status })}
+        onDelete={deleteRoomById}
+      />
+
+      <button
+        onClick={seedRooms}
+        className="mb-4 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+      >
+        Seed Rooms (Dev Only)
+      </button>
+
+    </div>
+  );
 }

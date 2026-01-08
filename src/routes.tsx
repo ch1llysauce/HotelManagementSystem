@@ -2,9 +2,10 @@ import { Route, Routes } from 'react-router-dom';
 import Layout from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
 import CheckIn from "./pages/CheckIn";
-import Rooms from "./pages/Rooms";
+import RoomsPage from "./pages/Rooms";
 import Guests from "./pages/Guests";
 import ArchivedGuests from './pages/ArchivedGuests';
+import HousekeepingPage from './pages/HousekeepingPage';
 
 export default function AppRoutes() {
   return (
@@ -14,7 +15,8 @@ export default function AppRoutes() {
         <Route path="/checkin" element={<CheckIn />} />
         <Route path="/guests" element={<Guests />} />
         <Route path="/archived-guests" element={<ArchivedGuests />} />
-        <Route path="/rooms" element={<Rooms />} />
+        <Route path="/rooms" element={<RoomsPage />} />
+        <Route path="/housekeeping" element={<HousekeepingPage />} />
     </Routes>
     </Layout>
     );

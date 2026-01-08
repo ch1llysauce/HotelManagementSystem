@@ -15,7 +15,7 @@ function guestToFirestoreUpdate(g: Guest) {
     name: g.name ?? "",
     email: g.email ?? "",
     phone: g.phone ?? "",
-    room: g.room ?? "",
+    roomNumber: g.roomNumber ?? "",
     // don't include id or timestamp here; include checkedIn if you want to update it explicitly
   };
 }
@@ -37,8 +37,19 @@ export default function Guests() {
           name: guestData.name ?? "",
           email: guestData.email ?? "",
           phone: guestData.phone ?? "",
-          room: guestData.room ?? "",
+          roomId: guestData.roomId ?? "",
+          roomNumber: guestData.roomNumber ?? 0,
           checkedIn: guestData.checkedIn !== false,
+          checkedOut: guestData.checkedOut !== false,
+          checkInDate: guestData.checkInDate?.toDate
+            ? guestData.checkInDate.toDate().toISOString().split("T")[0]
+            : (typeof guestData.checkInDate === "string" ? guestData.checkInDate : undefined),
+
+          checkOutDate: guestData.checkOutDate?.toDate
+            ? guestData.checkOutDate.toDate().toISOString().split("T")[0]
+            : (typeof guestData.checkOutDate === "string" ? guestData.checkOutDate : undefined),
+          actualCheckInDate: guestData.actualCheckInDate?.toDate ? guestData.actualCheckInDate.toDate() : undefined,
+          actualCheckOutDate: guestData.actualCheckOutDate?.toDate ? guestData.actualCheckOutDate.toDate() : undefined,
           timestamp: guestData.timestamp ?? null,
         } as Guest;
       });
@@ -99,6 +110,7 @@ export default function Guests() {
       {checkOutGuest && (
         <CheckoutModal
           guestId={checkOutGuest.id}
+          roomId={checkOutGuest.roomId}
           onClose={() => setCheckOutGuest(null)}
         />
       )}

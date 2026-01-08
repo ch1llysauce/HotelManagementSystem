@@ -10,7 +10,11 @@ export default function ArchivedGuests() {
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
   const [selectedGuest, setSelectedGuest] = useState<ArchivedGuest | null>(null);
-
+  const formatDate = (ts?: Timestamp | string) => {
+    if (!ts) return "-";
+    if (typeof ts === "string") return ts;
+    return ts.toDate().toLocaleDateString();
+  };
   useEffect(() => {
     async function fetchArchivedGuests() {
       try {
@@ -30,7 +34,7 @@ export default function ArchivedGuests() {
   const filteredGuests = guests.filter(g => {
     const matchesSearch =
       g.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      g.room.toString().includes(searchTerm);
+      g.roomNumber.toString().includes(searchTerm);
     let withinDate = true;
 
     if (startDate) {
@@ -98,9 +102,9 @@ export default function ArchivedGuests() {
             {filteredGuests.map(guest => (
               <tr key={guest.id} className="border-b bg-gray-300 hover:bg-gray-400">
                 <td className="px-4 py-2 text-black">{guest.name}</td>
-                <td className="px-4 py-2 text-black">{guest.room}</td>
-                <td className="px-4 py-2 text-black">{guest.checkInDate}</td>
-                <td className="px-4 py-2 text-black">{guest.checkOutDate}</td>
+                <td className="px-4 py-2 text-black">{guest.roomNumber}</td>
+                <td className="px-4 py-2 text-black">{formatDate(guest.checkInDate)}</td>
+                <td className="px-4 py-2 text-black">{formatDate(guest.checkOutDate)}</td>
                 <td className="px-4 py-2 text-black">
                   {(guest.archivedAt as any)?.toDate?.()?.toLocaleDateString() ?? "-"}
                 </td>
