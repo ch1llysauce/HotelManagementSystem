@@ -4,7 +4,8 @@ import { db } from "../firebase/firebaseConfig";
 import { recordPayment } from "../utils/payments";
 import { updateRoom, listenToRooms } from "../utils/rooms.service";
 import { RoomDocument } from "../types";
-import { collection, addDoc, serverTimestamp, query, where, getDocs } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, query, where, getDocs, Timestamp } from "firebase/firestore";
+import { normalizeHotelDates } from "../utils/hotelDates";
 
 export default function CheckIn() {
   const [name, setName] = useState("");
@@ -21,6 +22,10 @@ export default function CheckIn() {
   const phoneInputRef = useRef<HTMLInputElement>(null);
   const selectedRoom = rooms.find(r => r.id === selectedRoomId);
   const roomRate = selectedRoom?.price ?? 0;
+  const { checkIn, checkOut } = normalizeHotelDates(
+    checkInDate ? new Date(checkInDate) : new Date(),
+    checkOutDate ? new Date(checkOutDate) : new Date()
+  );
 
   const nights =
     checkInDate && checkOutDate
@@ -31,11 +36,42 @@ export default function CheckIn() {
   const depositAmount = Number(deposit);
   const totalCost = roomRate * nights;
   const isDepositTooHigh = depositAmount > totalCost && totalCost > 0;
-  const today = new Date().toISOString().split("T")[0];
+  
+  const getMinCheckInDate = () => {
+    const now = new Date();
+    const cutoff = new Date();
+    cutoff.setHours(14, 0, 0, 0); // 2 PM today
+
+    if(now.getTime() >= cutoff.getTime()){
+      const tomorrow = new Date(now);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      return tomorrow.toISOString().split("T")[0];
+    }
+    
+    return now.toISOString().split("T")[0];
+  };
+
+  const minCheckInDate = getMinCheckInDate();
+
+  const addDays = (dateStr: string, days: number) => {
+    const d = new Date(dateStr + "T00:00:00");
+    d.setDate(d.getDate() + days);
+
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+
+    return `${y}-${m}-${day}`;
+  };
+
+  const minCheckoutDate = checkInDate ? addDays(checkInDate, 1) : minCheckInDate;
 
   useEffect(() => {
-    if (checkOutDate && checkInDate && new Date(checkOutDate) <= new Date(checkInDate)) {
-      setCheckOutDate("");
+    if (checkInDate && checkOutDate) {
+      const minCheckout = addDays(checkInDate, 1);
+      if(checkOutDate < minCheckout){
+        setCheckOutDate("");
+      }
     }
   }, [checkInDate]);
 
@@ -133,8 +169,8 @@ Notes: ${notes || "None"}
           email: email,
           roomId: selectedRoom.id,
           roomNumber: selectedRoom.number,
-          checkInDate: checkInDate,
-          checkOutDate: checkOutDate,
+          checkInDate: Timestamp.fromDate(checkIn),
+          checkOutDate: Timestamp.fromDate(checkOut),
           notes,
           deposit: depositAmount,
           extras: 0,
@@ -142,13 +178,12 @@ Notes: ${notes || "None"}
           timestamp: serverTimestamp(),
         });
 
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        const now = new Date();
 
-        const checkIn = new Date(checkInDate);
-        checkIn.setHours(0, 0, 0, 0);
+        //const checkIn = new Date(checkInDate);
+        //checkIn.setHours(0, 0, 0, 0);
 
-        const status = checkIn.getTime() === today.getTime() ? "Occupied" : "Reserved";
+        const status = now.getTime() >= checkIn.getTime() ? "Occupied" : "Reserved";
 
         await updateRoom(selectedRoom.id, {
           status: status,
@@ -281,7 +316,7 @@ Notes: ${notes || "None"}
               <input
                 id="checkInDate"
                 type="date"
-                min={today}
+                min={minCheckInDate}
                 className="border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"
                 value={checkInDate}
                 onChange={(e) => setCheckInDate(e.target.value)}
@@ -299,7 +334,7 @@ Notes: ${notes || "None"}
               <input
                 id="checkOutDate"
                 type="date"
-                min={checkInDate || today}
+                min={minCheckoutDate}
                 className="border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"
                 value={checkOutDate}
                 onChange={(e) => setCheckOutDate(e.target.value)}

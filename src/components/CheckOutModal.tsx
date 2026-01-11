@@ -131,59 +131,67 @@ export default function CheckoutModal({ guestId, roomId, onClose }: CheckoutModa
   /* Checkout Handler */
   /* ------------------- */
   async function handleCheckout() {
-    if (!guest || !guest.id) return alert("Guest ID missing");
-    if (!guest.roomId) return alert("Guest room information missing");
-    if (nights <= 0) return alert("Invalid stay duration");
+  if (!guest?.id) return alert("Guest ID missing");
+  if (!guest.roomId) return alert("Guest room information missing");
+  if (nights <= 0) return alert("Invalid stay duration");
 
-    setLoading(true);
+  setLoading(true);
 
-    try {
-      // Only record a payment if there's a remaining balance
-      if (balance > 0) {
-        await recordPayment(
-          guest.id,
-          balance,
-          paymentMethod,
-          "full", // you can change "full" to "remaining" for clarity
-          "completed"
-        );
-      }
-
-      // Update guest record
-      await updateDoc(doc(db, "guests", guest.id), {
-        checkedIn: false,
-        checkedOutAt: serverTimestamp(),
-        balance: 0, // reset balance after checkout
-      });
-
-      // Update room status
-      await updateDoc(doc(db, "rooms", guest.roomId), {
-        status: "Cleaning",
-        guestId: null,
-      });
-
-      // Add logs
-      await addDoc(collection(db, "logs"), {
-        action: "check-out",
-        guestId: guest.id,
-        timestamp: serverTimestamp(),
-      });
-
-      // Archive guest
-      await addDoc(collection(db, "archivedGuests"), {
-        ...guest,
-        archivedAt: serverTimestamp(),
-      });
-
-      alert(`Guest ${guest.name} successfully checked out.`);
-      onClose();
-    } catch (error) {
-      console.error(error);
-      alert("Checkout failed. Try again.");
-    } finally {
-      setLoading(false);
+  try {
+    // 1) If there’s still a balance, record the final payment
+    if (balance > 0) {
+      await recordPayment(
+        guest.id,
+        balance,
+        paymentMethod,
+        "full",
+        "completed"
+      );
     }
+
+    // 2) Update guest record: mark out + set balance to 0
+    const guestRef = doc(db, "guests", guest.id);
+    await updateDoc(guestRef, {
+      checkedIn: false,
+      checkedOut: true,          
+      checkedOutAt: serverTimestamp(),
+      balance: 0,                
+    });
+
+    // 3) Update room: Cleaning + clear assignedGuestId
+    const roomRef = doc(db, "rooms", guest.roomId);
+    await updateDoc(roomRef, {
+      status: "Cleaning",
+      assignedGuestId: null, 
+    });
+
+    // 4) Log action
+    await addDoc(collection(db, "logs"), {
+      action: "check-out",
+      guestId: guest.id,
+      timestamp: serverTimestamp(),
+    });
+
+    // 5) Archive guest WITH balance forced to 0
+    await addDoc(collection(db, "archivedGuests"), {
+      ...guest,
+      checkedIn: false,
+      checkedOut: true,
+      checkedOutAt: serverTimestamp(),
+      balance: 0,
+      archivedAt: serverTimestamp(),
+    });
+
+    alert(`Guest ${guest.name} successfully checked out.`);
+    onClose();
+  } catch (error) {
+    console.error(error);
+    alert("Checkout failed. Try again.");
+  } finally {
+    setLoading(false);
   }
+}
+
 
   /* ------------------- */
   /* UI */

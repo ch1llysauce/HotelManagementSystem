@@ -1,5 +1,4 @@
-import firebase from "firebase/compat/app";
-
+import { Timestamp } from "firebase/firestore";
 export type RoomStatus = "Available" | "Occupied" | "Reserved" | "Cleaning";
 
 export interface Room {
@@ -36,8 +35,23 @@ export interface Guest {
   balance?: number;
 }
 
-export interface ArchivedGuest extends Guest {
-  archivedAt: firebase.firestore.Timestamp;
+export interface ArchivedGuest {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  roomId: string;
+  roomNumber: number;
+
+  checkInDate?: string;
+  checkOutDate?: string;
+
+  extras?: number;
+  deposit?: number;
+  balance?: number;
+
+  archivedAt: Timestamp;
+  checkedOutAt?: Timestamp; 
 }
 
 export interface CheckOut {
