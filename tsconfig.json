@@ -1,14 +1,16 @@
 {
   "compilerOptions": {
-    "module": "NodeNext",
+    "target": "es2017",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx", 
+    "skipLibCheck": true,         
     "esModuleInterop": true,
-    "moduleResolution": "nodenext",
+    "strict": true,
     "noImplicitReturns": true,
     "noUnusedLocals": true,
     "outDir": "lib",
-    "sourceMap": true,
-    "strict": true,
-    "target": "es2017"
+    "sourceMap": true
   },
   "compileOnSave": true,
   "include": [
