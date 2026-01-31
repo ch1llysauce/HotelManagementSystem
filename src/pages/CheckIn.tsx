@@ -27,6 +27,12 @@ export default function CheckIn() {
     checkOutDate ? new Date(checkOutDate) : new Date()
   );
 
+  const toNoon = (date: Date) => {
+    const d = new Date(date);
+    d.setHours(12, 0, 0, 0);
+    return d;
+  };
+
   const nights =
     checkInDate && checkOutDate
       ? (new Date(checkOutDate).getTime() - new Date(checkInDate).getTime()) /
@@ -36,18 +42,18 @@ export default function CheckIn() {
   const depositAmount = Number(deposit);
   const totalCost = roomRate * nights;
   const isDepositTooHigh = depositAmount > totalCost && totalCost > 0;
-  
+
   const getMinCheckInDate = () => {
     const now = new Date();
     const cutoff = new Date();
     cutoff.setHours(14, 0, 0, 0); // 2 PM today
 
-    if(now.getTime() >= cutoff.getTime()){
+    if (now.getTime() >= cutoff.getTime()) {
       const tomorrow = new Date(now);
       tomorrow.setDate(tomorrow.getDate() + 1);
       return tomorrow.toISOString().split("T")[0];
     }
-    
+
     return now.toISOString().split("T")[0];
   };
 
@@ -69,7 +75,7 @@ export default function CheckIn() {
   useEffect(() => {
     if (checkInDate && checkOutDate) {
       const minCheckout = addDays(checkInDate, 1);
-      if(checkOutDate < minCheckout){
+      if (checkOutDate < minCheckout) {
         setCheckOutDate("");
       }
     }
@@ -107,10 +113,25 @@ export default function CheckIn() {
       const emailQuery = query(collection(db, "guests"), where("email", "==", email));
       const phoneQuery = query(collection(db, "guests"), where("phone", "==", finalPhone));
 
-      const [emailSnap, phoneSnap] = await Promise.all([getDocs(emailQuery), getDocs(phoneQuery)]);
+      const [emailSnap, phoneSnap] = await Promise.all([
+        getDocs(emailQuery),
+        getDocs(phoneQuery),
+      ]);
 
-      if (!emailSnap.empty || !phoneSnap.empty) {
-        alert("A guest with this email or phone number is already checked in.");
+      const isActive = (d: any) => {
+        const status = d.status;
+        const checkedOut = !!d.checkedOut;
+
+        // active if not checked out
+        if (status) return status !== "checked-out";
+        return !checkedOut; 
+      };
+
+      const emailHasActive = emailSnap.docs.some(doc => isActive(doc.data()));
+      const phoneHasActive = phoneSnap.docs.some(doc => isActive(doc.data()));
+
+      if (emailHasActive || phoneHasActive) {
+        alert("A guest with this email or phone number is already active (reserved/checked-in).");
         phoneInputRef.current?.focus();
         return;
       }
@@ -162,6 +183,12 @@ Notes: ${notes || "None"}
 
     if (depositSuccess) {
       //Store guest data in Firestore
+      const expectedCheckOut = toNoon(checkOut);
+
+      const now = new Date();
+      const guestStatus = now.getTime() >= checkIn.getTime() ? "checked-in" : "reserved";
+      const roomStatus = now.getTime() >= checkIn.getTime() ? "Occupied" : "Reserved";
+
       try {
         const guestDoc = await addDoc(collection(db, "guests"), {
           name,
@@ -171,22 +198,21 @@ Notes: ${notes || "None"}
           roomNumber: selectedRoom.number,
           checkInDate: Timestamp.fromDate(checkIn),
           checkOutDate: Timestamp.fromDate(checkOut),
+          status: guestStatus,
+          expectedCheckOut: Timestamp.fromDate(expectedCheckOut),
+          checkedOutAt: null,
+          overdueSince: null,
+
           notes,
           deposit: depositAmount,
           extras: 0,
-          checkedIn: true,
+          checkedIn: guestStatus === "checked-in",
           timestamp: serverTimestamp(),
+
         });
 
-        const now = new Date();
-
-        //const checkIn = new Date(checkInDate);
-        //checkIn.setHours(0, 0, 0, 0);
-
-        const status = now.getTime() >= checkIn.getTime() ? "Occupied" : "Reserved";
-
         await updateRoom(selectedRoom.id, {
-          status: status,
+          status: roomStatus,
           assignedGuestId: guestDoc.id,
         });
 

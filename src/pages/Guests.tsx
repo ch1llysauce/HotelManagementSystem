@@ -7,6 +7,7 @@ import type { Guest } from "../types";
 import { useToast } from "../components/Toast";
 import GuestCard from "../components/GuestCard";
 import EditGuestModal from "../components/EditGuestModal";
+import CheckInConfirmModal from "../components/CheckInConfirmModal";
 import CheckoutModal from "../components/CheckOutModal";
 import DeleteConfirmModal from "../components/DeleteConfirmModal";
 
@@ -23,15 +24,39 @@ function guestToFirestoreUpdate(g: Guest) {
 export default function Guests() {
   const [guests, setGuests] = useState<Guest[]>([]);
   const [editGuest, setEditGuest] = useState<Guest | null>(null);
+  const [checkInGuest, setCheckInGuest] = useState<Guest | null>(null);
   const [checkOutGuest, setCheckOutGuest] = useState<Guest | null>(null);
   const [deleteGuestId, setDeleteGuestId] = useState<string | null>(null);
   const { showToast } = useToast();
+
+  const handleCheckIn = async (guestId: string) => {
+    try {
+      const ref = doc(db, "guests", guestId);
+      await updateDoc(ref, {
+        checkedIn: true,
+        checkedOut: false,
+        status: "checked-in",
+      });
+      showToast("Guest checked in");
+    } catch (e) {
+      console.error(e);
+      showToast("Failed to check in");
+    }
+  };
 
   // Live sync with Firestore
   useEffect(() => {
     const unsub = onSnapshot(collection(db, "guests"), (snapshot) => {
       const data: Guest[] = snapshot.docs.map((d) => {
         const guestData = d.data() as any;
+
+        console.log("GUEST DOC", d.id, {
+          status: guestData.status,
+          checkedIn: guestData.checkedIn,
+          checkedOut: guestData.checkedOut,
+        });
+
+
         return {
           id: d.id,
           name: guestData.name ?? "",
@@ -39,8 +64,10 @@ export default function Guests() {
           phone: guestData.phone ?? "",
           roomId: guestData.roomId ?? "",
           roomNumber: guestData.roomNumber ?? 0,
-          checkedIn: guestData.checkedIn !== false,
-          checkedOut: guestData.checkedOut !== false,
+
+          checkedIn: !!guestData.checkedIn,
+          checkedOut: !!guestData.checkedOut,
+
           checkInDate: guestData.checkInDate?.toDate
             ? guestData.checkInDate.toDate().toISOString().split("T")[0]
             : (typeof guestData.checkInDate === "string" ? guestData.checkInDate : undefined),
@@ -48,8 +75,12 @@ export default function Guests() {
           checkOutDate: guestData.checkOutDate?.toDate
             ? guestData.checkOutDate.toDate().toISOString().split("T")[0]
             : (typeof guestData.checkOutDate === "string" ? guestData.checkOutDate : undefined),
-          actualCheckInDate: guestData.actualCheckInDate?.toDate ? guestData.actualCheckInDate.toDate() : undefined,
-          actualCheckOutDate: guestData.actualCheckOutDate?.toDate ? guestData.actualCheckOutDate.toDate() : undefined,
+
+          status: guestData.status,
+          expectedCheckOut: guestData.expectedCheckOut ?? null,
+          overdueSince: guestData.overdueSince ?? null,
+          checkedOutAt: guestData.checkedOutAt ?? null,
+
           timestamp: guestData.timestamp ?? null,
         } as Guest;
       });
@@ -86,12 +117,23 @@ export default function Guests() {
       {/* Guest Cards */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
         {guests
-          .filter((g) => g.checkedIn)
+          .filter((g) => !g.checkedOut)
+          .sort((a, b) => {
+            const rank = (s?: string) => {
+              if (s === "overdue-check-out") return 0;
+              if (s === "due-to-check-out") return 1;
+              if (s === "checked-in") return 2;
+              if (s === "reserved") return 3;
+              return 4;
+            };
+            return rank(a.status) - rank(b.status);
+          })
           .map((guest) => (
             <GuestCard
               key={guest.id}
               guest={guest}
               onEdit={() => setEditGuest(guest)}
+              onCheckIn={(id) => setCheckInGuest(guest)}
               onCheckOut={(id) => setCheckOutGuest(guest)}
               onDelete={(id) => setDeleteGuestId(id)}
             />
@@ -104,6 +146,17 @@ export default function Guests() {
           guest={editGuest}
           onClose={() => setEditGuest(null)}
           onSave={handleSaveEdit}
+        />
+      )}
+
+      {checkInGuest && (
+        <CheckInConfirmModal
+          guestName={checkInGuest.name}
+          onCancel={() => setCheckInGuest(null)}
+          onConfirm={async () => {
+            await handleCheckIn(checkInGuest.id);
+            setCheckInGuest(null);
+          }}
         />
       )}
 

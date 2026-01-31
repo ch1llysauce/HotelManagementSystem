@@ -18,3 +18,7 @@ export function toDate(value: any): Date | null {
     if (typeof value === 'string') return new Date(value);
     return null;
 }
+
+export function startOfDay(d: Date): Date {
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}

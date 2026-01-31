@@ -1,5 +1,4 @@
-// utils/guests.ts (or wherever you fetch guests)
-import { collection, doc, addDoc, getDocs, getDoc, updateDoc } from "firebase/firestore";
+import { collection, doc, addDoc, getDocs, getDoc, updateDoc, Timestamp } from "firebase/firestore";
 import { db } from "../firebase/firebaseConfig";
 import type { Guest } from "../types";
 import { updateRoom } from "./rooms.service";
@@ -39,9 +38,27 @@ const addDays = (ymd: string, days: number) => {
   return toYMD(date);
 }
 
+const toNoonTimestamp = (ymd?: string) => {
+  if (!ymd) return null;
+
+  const [y, m, d] = ymd.split("-").map(Number);
+  const noon = new Date(y, m - 1, d, 12, 0, 0, 0); // 12PM
+  return Timestamp.fromDate(noon);
+};
+
+const deriveStatus = (checkedIn: boolean, checkedOut: boolean) => {
+  if (checkedOut) return "checked-out";
+  if (checkedIn) return "checked-in";
+  return "reserved";
+};
+
+
 export const addGuest = async (guest: Omit<Guest, "id">) => {
   const checkInYMD = guest.checkInDate ? toYMD(guest.checkInDate) : toYMD(new Date());
   const checkOutYMD = guest.checkOutDate ? toYMD(guest.checkOutDate) : (checkInYMD ? addDays(checkInYMD, 1) : undefined);
+
+  const checkedIn = false;
+  const checkedOut = false;
 
   await addDoc(collection(db, "guests"), {
     name: guest.name,
@@ -54,8 +71,13 @@ export const addGuest = async (guest: Omit<Guest, "id">) => {
     checkInDate: checkInYMD,
     checkOutDate: checkOutYMD,
 
-    checkedIn: false,
-    checkedOut: false,
+    status: "reserved",
+    expectedCheckOut: toNoonTimestamp(checkOutYMD),
+    overdueSince: null,
+    checkedOutAt: null,
+
+    checkedIn,
+    checkedOut,
   });
 };
 
@@ -78,13 +100,21 @@ export const fetchGuests = async (): Promise<Guest[]> => {
       // normalize everything to "YYYY-MM-DD"
       checkInDate: toYMD(data.checkInDate),
       checkOutDate: toYMD(data.checkOutDate),
+
+      status: data.status ?? deriveStatus(!!data.checkedIn, !!data.checkedOut),
+      expectedCheckOut: data.expectedCheckOut ?? null,
+      overdueSince: data.overdueSince ?? null,
+      checkOutAt: data.checkOutAt ?? null,
     };
   });
 };
 
 // Confirm check-in
 export const confirmCheckIn = async (guestId: string) => {
-  await updateDoc(doc(db, "guests", guestId), { checkedIn: true });
+  await updateDoc(doc(db, "guests", guestId), { 
+    checkedIn: true,
+    status: "checked-in"
+  });
 };
 
 // Confirm check-out
@@ -99,7 +129,11 @@ export const confirmCheckOut = async (guestId: string) => {
 
   if (!roomId) throw new Error("Guest has no roomId");
 
-  await updateDoc(doc(db, "guests", guestId), { checkedOut: true });
+  await updateDoc(doc(db, "guests", guestId), { 
+    checkedOut: true,
+    status: "checked-out",
+    checkOutAt: Timestamp.now(),
+  });
 
   await updateRoom(roomId, { status: "Cleaning", assignedGuestId: null });
 };
