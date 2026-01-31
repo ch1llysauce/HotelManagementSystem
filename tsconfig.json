@@ -9,6 +9,7 @@
     "strict": true,
     "noImplicitReturns": true,
     "noUnusedLocals": true,
+    "rootDir": "src",
     "outDir": "lib",
     "sourceMap": true
   },
