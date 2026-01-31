@@ -122,7 +122,7 @@ export default function CheckIn() {
         const status = d.status;
         const checkedOut = !!d.checkedOut;
 
-        // active if not checked out
+        // active if not checked out test
         if (status) return status !== "checked-out";
         return !checkedOut; 
       };
