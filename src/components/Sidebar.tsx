@@ -11,7 +11,7 @@ export default function Sidebar({ visible, onClose }: SidebarProps) {
       className={`
         fixed inset-y-0 left-0 h-screen w-64 bg-sky-300 p-5 text-black shadow-lg
         transition-all duration-500 ease-in-out
-
+        z-50
         ${visible ? "translate-x-0 opacity-100" : "-translate-x-full opacity-0"}
       `}
     >

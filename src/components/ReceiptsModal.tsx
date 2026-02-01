@@ -19,12 +19,12 @@ export default function ReceiptModal({ guest, onClose }: ReceiptModalProps) {
   const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
   const nights =
-  checkIn && checkOut
-    ? Math.max(
+    checkIn && checkOut
+      ? Math.max(
         Math.ceil((checkOut.getTime() - checkIn.getTime()) / MS_PER_DAY),
         1
       )
-    : 1;
+      : 1;
 
   const [roomRate, setRoomRate] = useState<number>(0);
 
@@ -80,7 +80,7 @@ export default function ReceiptModal({ guest, onClose }: ReceiptModalProps) {
 
   const handleEmail = async () => {
     if (!receiptRef.current) return;
-    if(!guest.email) {
+    if (!guest.email) {
       alert("Guest email not available");
       return;
     }
@@ -92,26 +92,43 @@ export default function ReceiptModal({ guest, onClose }: ReceiptModalProps) {
   `;
 
     try {
-      const res = await fetch("https://sendreceipt-6ixp46nnya-as.a.run.app", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          to: guest.email,
-          subject: "Your Hotel Receipt",
-          html: htmlContent,
-        }),
-      });
+      const res = await fetch(
+        "https://asia-southeast1-hotelmanagement-e654a.cloudfunctions.net/sendReceipt",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            to: guest.email,
+            subject: "Your Hotel Receipt",
+            html: htmlContent,
+          }),
+        }
+      );
 
-      if(!res.ok) throw new Error("Network response was not ok");
+      const text = await res.text(); // ✅ read raw response
+      console.log("sendReceipt status:", res.status);
+      console.log("sendReceipt response:", text);
 
-      const data = await res.json();
-      console.log("Email sent:", data);
+      if (!res.ok) {
+        alert(`Email failed (HTTP ${res.status}). Check console for details.`);
+        return;
+      }
+
+      // parse JSON if possible
+      let data: any;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = { success: true, raw: text };
+      }
+
       alert(data.success ? "Receipt emailed successfully!" : "Failed to send email");
     } catch (err) {
-      console.error(err);
+      console.error("Fetch error:", err);
       alert("Error sending receipt email");
     }
   };
+
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
