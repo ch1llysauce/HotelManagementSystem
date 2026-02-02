@@ -51,7 +51,7 @@ export default function ArchivedGuests() {
 
   return (
     <div className="p-8">
-      <h1 className="text-3xl font-bold mb-6">Archived Guests History</h1>
+      <h1 className="text-3xl font-bold text-black mb-6">Archived Guests History</h1>
 
       {/* Filters */}
       <div className="flex flex-col md:flex-row gap-4 mb-6">

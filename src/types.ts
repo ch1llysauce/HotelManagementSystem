@@ -1,6 +1,6 @@
 import { Timestamp } from "firebase/firestore";
 export type RoomStatus = "Available" | "Occupied" | "Reserved" | "Cleaning";
-export type GuestStatus = "reserved" | "checked-in"  | "due-to-check-out"  | "overdue-check-out" | "checked-out";
+export type GuestStatus = "reserved" | "checked-in"  | "due-to-check-in" | "due-to-check-out"  | "overdue-check-out" | "checked-out";
 
 export interface Room {
   number: number;
