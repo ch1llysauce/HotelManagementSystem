@@ -8,7 +8,7 @@ interface RoomCardProps {
 
 export function RoomCard({ room, onStatusChange, onDelete }: RoomCardProps) {
   return (
-    <div className="p-4 border rounded-lg shadow hover:shadow-lg transition text-black">
+    <div className="p-4 border rounded-lg shadow hover:shadow-lg transition text-black dark:text-white">
       <h2 className="font-semibold text-lg">
         Room {room.number} ({room.type})
       </h2>
@@ -21,7 +21,7 @@ export function RoomCard({ room, onStatusChange, onDelete }: RoomCardProps) {
         onChange={(e) => onStatusChange(room.id, e.target.value as RoomStatus)}
         className={`border p-2 mt-1 w-full rounded
     ${(room.status === "Occupied" || room.status === "Reserved")
-            ? "bg-gray-400 text-gray-700 cursor-not-allowed opacity-70"
+            ? "bg-gray-600 text-black cursor-not-allowed opacity-70"
             : "bg-gray-500 text-white hover:bg-gray-600"
           }`}
       >

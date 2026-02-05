@@ -17,7 +17,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="flex min-h-screen overflow-hidden bg-gray-100 dark:bg-gray-900 transition-colors duration-500">
       <Sidebar visible={sidebarVisible} onClose={() => setSidebarVisible(false)} />
       {isMobile && !sidebarVisible && (
         <button
@@ -43,7 +43,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {/* Main Content */}
       <main
         className={`
-          flex-1 min-h-screen bg-gray-50 p-8 md:p-12 transition-all duration-500
+          flex-1 overflow-y-auto bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-50 p-8 md:p-12 transition-all duration-500
           ${sidebarVisible && !isMobile ? "md:ml-64" : ""}
           ${sidebarVisible && isMobile ? "ml-64" : "ml-0"}
         `}

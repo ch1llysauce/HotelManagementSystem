@@ -6,7 +6,7 @@ import RoomsPage from "./pages/Rooms";
 import Guests from "./pages/Guests";
 import ArchivedGuests from './pages/ArchivedGuests';
 import HousekeepingPage from './pages/HousekeepingPage';
-
+import Settings from './pages/Settings';
 export default function AppRoutes() {
   return (
     <Layout>
@@ -17,6 +17,7 @@ export default function AppRoutes() {
         <Route path="/archived-guests" element={<ArchivedGuests />} />
         <Route path="/rooms" element={<RoomsPage />} />
         <Route path="/housekeeping" element={<HousekeepingPage />} />
+        <Route path = "/settings" element={<Settings />} />
     </Routes>
     </Layout>
     );

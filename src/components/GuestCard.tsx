@@ -116,13 +116,13 @@ const GuestCard: React.FC<GuestProps> = ({
   return (
     <div className="relative w-full max-w-sm mx-auto rounded-2xl">
       <div
-        className={`absolute inset-0 rounded-2xl bg-gradient-to-r ${color} blur-md opacity-60 pointer-events-none`}
+        className={`absolute inset-0 rounded-2xl bg-gradient-to-b ${color} blur-md opacity-40 pointer-events-none`}
       ></div>
 
-      <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-5 border border-gray-200 dark:border-gray-700">
+      <div className="relative dark:bg-slate-500 bg-gray-900 rounded-2xl shadow-lg p-5 border border-gray-200 dark:border-gray-700">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white truncate">
+            <h2 className="text-lg font-semibold text-white truncate">
               {guest.name}
             </h2>
 
@@ -165,7 +165,7 @@ const GuestCard: React.FC<GuestProps> = ({
           </button>
         </div>
 
-        <div className="space-y-1 mt-3 text-sm text-gray-700 dark:text-gray-300">
+        <div className="space-y-1 mt-3 text-sm text-gray-100">
           <p className="truncate">
             <span className="font-medium">Room Number:</span> {guest.roomNumber}
           </p>

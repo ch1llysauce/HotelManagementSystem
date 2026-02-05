@@ -3,11 +3,11 @@ import { FiUsers, FiHome, FiCheckCircle } from 'react-icons/fi';
 
 export default function Dashboard() {
     return (
-        <div className="min-h-screen bg-gray-50 p-8 md:p-12 lg:ml-64 mx-auto max-w-4xl
+        <div className="min-h-screen bg-gray-50 dark: bg-transparent p-8 md:p-12 lg:ml-64 mx-auto max-w-4xl
             transition-all duration-500">
             {/* Header */}
             <div className="mb-12 text-center max-w-3xl mx-auto">
-                <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900">
+                <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 dark:text-white">
                     Hotel Management Dashboard
                 </h1>
                 <p className="mt-3 text-gray-500 text-lg md:text-xl">

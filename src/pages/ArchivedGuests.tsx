@@ -51,7 +51,7 @@ export default function ArchivedGuests() {
 
   return (
     <div className="p-8">
-      <h1 className="text-3xl font-bold text-black mb-6">Archived Guests History</h1>
+      <h1 className="text-3xl font-bold text-black dark:text-white mb-6">Archived Guests History</h1>
 
       {/* Filters */}
       <div className="flex flex-col md:flex-row gap-4 mb-6">
@@ -65,14 +65,14 @@ export default function ArchivedGuests() {
 
         <input
           type="date"
-          className="border rounded-lg p-2"
+          className="border rounded-lg p-2 text-gray-100 dark:text-gray-100"
           value={startDate}
           onChange={e => setStartDate(e.target.value)}
         />
 
         <input
           type="date"
-          className="border rounded-lg p-2"
+          className="border rounded-lg p-2 text-gray-100 dark:text-gray-100"
           value={endDate}
           onChange={e => setEndDate(e.target.value)}
         />
@@ -81,7 +81,7 @@ export default function ArchivedGuests() {
       {/* Guests Table */}
       <div className="overflow-x-auto bg-white shadow rounded-lg">
         <table className="min-w-full table-auto">
-          <thead className="bg-gray-600">
+          <thead className="bg-gray-600 dark:bg-gray-400 text-white dark:text-gray-700">
             <tr>
               <th className="px-4 py-2 text-left">Name</th>
               <th className="px-4 py-2 text-left">Room</th>
@@ -100,12 +100,12 @@ export default function ArchivedGuests() {
               </tr>
             )}
             {filteredGuests.map(guest => (
-              <tr key={guest.id} className="border-b bg-gray-300 hover:bg-gray-400">
-                <td className="px-4 py-2 text-black">{guest.name}</td>
-                <td className="px-4 py-2 text-black">{guest.roomNumber}</td>
-                <td className="px-4 py-2 text-black">{formatDate(guest.checkInDate)}</td>
-                <td className="px-4 py-2 text-black">{formatDate(guest.checkOutDate)}</td>
-                <td className="px-4 py-2 text-black">
+              <tr key={guest.id} className="border-b bg-gray-300 hover:bg-gray-400 dark:bg-gray-500 dark:hover:bg-gray-600">
+                <td className="px-4 py-2 text-black dark:text-gray-100">{guest.name}</td>
+                <td className="px-4 py-2 text-black dark:text-gray-100">{guest.roomNumber}</td>
+                <td className="px-4 py-2 text-black dark:text-gray-100">{formatDate(guest.checkInDate)}</td>
+                <td className="px-4 py-2 text-black dark:text-gray-100">{formatDate(guest.checkOutDate)}</td>
+                <td className="px-4 py-2 text-black dark:text-gray-100">
                   {(guest.archivedAt as any)?.toDate?.()?.toLocaleDateString() ?? "-"}
                 </td>
                 <td className="px-4 py-2">

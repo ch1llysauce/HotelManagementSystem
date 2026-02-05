@@ -36,7 +36,10 @@ export default function Guests() {
   const [sortBy, setSortBy] = useState<"checkoutSoon" | "checkinSoon" | "room" | "name">(
     "checkoutSoon"
   );
-  const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
+  const [viewMode, setViewMode] = useState<"cards" | "table">(() => {
+    const saved = localStorage.getItem("guestViewMode");
+    return saved === "table" ? "table" : "cards";
+  });
   const activeOnly = useState(true);
   const [exportOpen, setExportOpen] = useState(false);
   const exportRef = useRef<HTMLDivElement | null>(null);
@@ -239,6 +242,9 @@ export default function Guests() {
     setExportOpen(false);
   };
 
+  useEffect(() => {
+    localStorage.setItem("guestViewMode", viewMode);
+  }, [viewMode]);
 
   useEffect(() => {
     const onDown = (e: MouseEvent) => {
@@ -328,12 +334,12 @@ export default function Guests() {
   return (
     <div className="p-10">
       <div className="mb-12 text-center max-w-3xl mx-auto">
-        <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900">Guests</h1>
+        <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 dark:text-gray-50">Guests</h1>
         <p className="mt-3 text-gray-500 text-lg md:text-xl">View and manage all checked-in guests.</p>
         <div className="flex gap-3 justify-center mt-6">
           <button
             onClick={() => navigate('/checkin')}
-            className="px-4 py-2 rounded-xl bg-gray-900 text-white hover:bg-gray-800 transition">
+            className="px-4 py-2 rounded-xl bg-gray-900 dark:bg-slate-700 text-white hover:bg-gray-800 transition">
             + Add Guest
           </button>
 
@@ -377,7 +383,7 @@ export default function Guests() {
 
       {/* Controls */}
       <div className="max-w-6xl mx-auto w-full">
-        <div className="bg-blue-200 rounded-2xl shadow-md p-4 flex flex-col lg:flex-row lg:items-center gap-3 mb-8 max-w-6xl mx-auto w-full">
+        <div className="bg-blue-200 dark:bg-slate-700 rounded-2xl shadow-md p-4 flex flex-col lg:flex-row lg:items-center gap-3 mb-8 max-w-6xl mx-auto w-full">
           {/* Search */}
           <input
             type="text"
@@ -391,7 +397,7 @@ export default function Guests() {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as any)}
-            className="px-4 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-900">
+            className="text-gray-100 dark:text-gray-100 px-4 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-900">
             <option value="all">All Status</option>
             <option value="reserved">Reserved</option>
             <option value="checked-in">Checked In</option>
@@ -404,7 +410,7 @@ export default function Guests() {
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as any)}
-            className="px-4 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-900">
+            className="text-gray-100 dark:text-gray-100 px-4 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-900">
             <option value="checkoutSoon">Check-out soonest</option>
             <option value="checkinSoon">Check-in soonest</option>
             <option value="room">Room number</option>
@@ -436,8 +442,8 @@ export default function Guests() {
         <div className="bg-white rounded-2xl shadow-md overflow-hidden border border-gray-200 max-w-6xl mx-auto w-full">
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
-              <thead className="bg-gray-50">
-                <tr className="text-left text-gray-600">
+              <thead className="bg-gray-600 dark:bg-gray-400 text-white dark:text-gray-700">
+                <tr>
                   <th className="p-3 text-center">Name</th>
                   <th className="p-3 text-center">Room</th>
                   <th className="p-3 text-center">Status</th>
@@ -451,7 +457,7 @@ export default function Guests() {
 
               <tbody>
                 {visibleGuests.map((g) => (
-                  <tr key={g.id} className="border-t border-gray-100 hover:bg-gray-300">
+                  <tr key={g.id} className="border-b bg-gray-300 hover:bg-gray-400 dark:bg-gray-500 dark:hover:bg-gray-600">
                     <td className="p-3 font-medium text-gray-900">{g.name}</td>
                     <td className="p-3 text-black">{g.roomNumber}</td>
 

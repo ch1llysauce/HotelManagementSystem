@@ -24,16 +24,16 @@ export default function HousekeepingPage() {
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4 text-black">Housekeeping</h1>
+      <h1 className="text-2xl font-bold mb-4 text-black dark:text-white">Housekeeping</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {cleaningRooms.map((room) => (
           <div
             key={room.id}
-            className="border p-4 rounded shadow bg-blue-300"
+            className="border border-gray-700 dark:border-gray-200 p-4 rounded shadow bg-blue-300 dark:bg-slate-700"
           >
-            <h3 className="font-bold text-gray-600">Room {room.number}</h3>
-            <p className="text-gray-600">Type: {room.type}</p>
+            <h3 className="font-bold text-gray-600 dark:text-gray-300">Room {room.number}</h3>
+            <p className="text-gray-600 dark:text-gray-300">Type: {room.type}</p>
 
             <button
               onClick={() => markAsAvailable(room.id)}

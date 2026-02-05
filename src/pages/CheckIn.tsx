@@ -124,7 +124,7 @@ export default function CheckIn() {
 
         // active if not checked out
         if (status) return status !== "checked-out";
-        return !checkedOut; 
+        return !checkedOut;
       };
 
       const emailHasActive = emailSnap.docs.some(doc => isActive(doc.data()));
@@ -264,21 +264,22 @@ Notes: ${notes || "None"}
 
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-10 bg-gray-50">
-      <div className="w-full max-w-lg bg-white rounded-3xl shadow-lg p-8 md:p-12 transition-all">
-        <div className="mb-12 text-center max-w-3xl mx-auto">
-          <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900">
+    <div className="h-full overflow-hidden flex items-start justify-center bg-gray-50 dark:bg-transparent">
+      <div className="w-full max-w-lg h-[calc(100vh-8rem)] bg-white dark:bg-slate-600 rounded-3xl shadow-lg p-6 overflow-hidden">
+        <div className="mb-4 text-center">
+          <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900 dark:text-gray-200">
             Guest Check-In
           </h1>
-          <p className="mt-3 text-gray-500 text-lg md:text-xl">
+          <p className="mt-1 text-gray-500 dark:text-gray-400 text-sm md:text-base">
             Registration of guests, make sure to input all the necessary information.
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-2">
           <input
             type="text"
-            className="border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            className="border border-gray-300 rounded-lg px-3 py-3 text-sm
+           focus:outline-none focus:ring-2 focus:ring-blue-400"
             placeholder="Full Name"
             value={name}
             onChange={(e) => {
@@ -287,11 +288,12 @@ Notes: ${notes || "None"}
             }}
           />
 
+          <small className="text-gray-400 dark:text-gray-200">Include country code for international guests</small>
           <input
             type="tel"
             id="phone"
             name="phone"
-            placeholder="9123456789 or +639123456789"
+            placeholder="Phone Number (+xx Format)"
             value={phone}
             onChange={(e) => {
               let value = e.target.value;
@@ -302,13 +304,14 @@ Notes: ${notes || "None"}
               }
               setPhone(value);
             }}
-            className="w-full px-4 py-2 rounded-lg border"
-          />
-          <small className="text-gray-400">Include country code for international guests</small>
+            className="border border-gray-300 rounded-lg px-3 py-3 text-sm
+           focus:outline-none focus:ring-2 focus:ring-blue-400"
 
+          />
           <input
             type="email"
-            className="border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            className="border border-gray-300 rounded-lg px-3 py-3 text-sm
+           focus:outline-none focus:ring-2 focus:ring-blue-400"
             placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -317,8 +320,8 @@ Notes: ${notes || "None"}
           <select
             value={selectedRoomId}
             onChange={(e) => setSelectedRoomId(e.target.value)}
-            className="border border-gray-300 rounded-lg p-3"
-          >
+            className="border border-gray-300 rounded-lg px-3 py-3 text-white text-sm
+           focus:outline-none focus:ring-2 focus:ring-blue-400">
             <option value="">Select Available Room</option>
             {rooms
               .filter(room => room.status === "Available")
@@ -335,7 +338,7 @@ Notes: ${notes || "None"}
             <div className="flex flex-col flex-1">
               <label
                 htmlFor="checkInDate"
-                className="text-gray-500 text-lg md:text-xl mb-1"
+                className="text-gray-500 dark:text-gray-200 text-sm mb-0.5"
               >
                 Check-In Date
               </label>
@@ -343,7 +346,7 @@ Notes: ${notes || "None"}
                 id="checkInDate"
                 type="date"
                 min={minCheckInDate}
-                className="border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"
+                className="text-gray-100 dark:text-gray-100 border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"
                 value={checkInDate}
                 onChange={(e) => setCheckInDate(e.target.value)}
               />
@@ -353,7 +356,7 @@ Notes: ${notes || "None"}
             <div className="flex flex-col flex-1">
               <label
                 htmlFor="checkOutDate"
-                className="text-gray-500 text-lg md:text-xl mb-1"
+                className="text-gray-500 dark:text-gray-200 text-sm mb-0.5"
               >
                 Check-Out Date
               </label>
@@ -361,7 +364,7 @@ Notes: ${notes || "None"}
                 id="checkOutDate"
                 type="date"
                 min={minCheckoutDate}
-                className="border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"
+                className="text-gray-100 dark:text-gray-100 border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"
                 value={checkOutDate}
                 onChange={(e) => setCheckOutDate(e.target.value)}
               />
@@ -384,7 +387,8 @@ Notes: ${notes || "None"}
 
               setDeposit(e.target.value);
             }}
-            className={`border rounded-lg p-3 focus:outline-none focus:ring-2
+            className={`border border-gray-300 rounded-lg px-3 py-3 text-sm
+           focus:outline-none focus:ring-2 focus:ring-blue-400
       ${isDepositTooHigh
                 ? "border-red-500 focus:ring-red-400"
                 : "border-gray-300 focus:ring-blue-400"
@@ -399,18 +403,20 @@ Notes: ${notes || "None"}
           <select
             value={depositMethod}
             onChange={(e) => setDepositMethod(e.target.value)}
-            className="w-full px-4 py-2 rounded-lg border"
+           className="border border-gray-300 rounded-lg px-3 py-3 text-white text-sm
+           focus:outline-none focus:ring-2 focus:ring-blue-400"
           >
             <option value="card">Card</option>
             <option value="cash">Cash</option>
           </select>
 
-          <p className="text-gray-600 mt-2">
+          <p className="text-gray-600 dark:text-gray-200 mt-2">
             Estimated total: ₱{roomRate * nights} (Deposit: ₱{deposit})
           </p>
 
           <textarea
-            className="border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            rows={3}
+            className="border border-gray-300 rounded-lg p-3 resize-none focus:outline-none focus:ring-2 focus:ring-blue-400"
             placeholder="Special Requests / Notes"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
