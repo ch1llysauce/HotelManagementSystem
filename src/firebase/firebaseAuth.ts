@@ -30,3 +30,4 @@ export const resetPassword = async (email: string) => {
 export const onUserStateChanged = (callback: (user: User | null) => void) => {
     return onAuthStateChanged(auth, callback);
 }
+

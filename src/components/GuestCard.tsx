@@ -190,7 +190,7 @@ const GuestCard: React.FC<GuestProps> = ({
             ref={menuRef}
             className="absolute right-4 top-14 w-36 bg-white dark:bg-gray-800 shadow-xl rounded-xl border border-gray-200 dark:border-gray-700 py-2 z-20 animate-fadeIn">
             <button
-              className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="w-full px-4 py-2 text-left text-sm bg-gray-50 dark:bg-gray-400 hover:bg-gray-400 dark:hover:bg-gray-700"
               onClick={(e) => {
                 e.stopPropagation(); 
                 setOpen((s) => !s);
@@ -202,7 +202,7 @@ const GuestCard: React.FC<GuestProps> = ({
 
             {canCheckIn && (
               <button
-                className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+                className="w-full px-4 py-2 text-left text-sm bg-gray-50 dark:bg-gray-400 hover:bg-gray-400 dark:hover:bg-gray-700"
                 onClick={() => {
                   setOpen(false);
                   onCheckIn?.(guest.id);
@@ -214,7 +214,7 @@ const GuestCard: React.FC<GuestProps> = ({
 
             {canCheckOut && (
               <button
-                className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+                className="w-full px-4 py-2 text-left text-sm bg-gray-50 dark:bg-gray-400 hover:bg-gray-400 dark:hover:bg-gray-700"
                 onClick={() => {
                   setOpen(false);
                   onCheckOut?.(guest.id, guest.roomId);
@@ -225,7 +225,7 @@ const GuestCard: React.FC<GuestProps> = ({
             )}
 
             <button
-              className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="w-full px-4 py-2 text-left text-sm text-red-600 bg-gray-50 dark:bg-gray-400 hover:bg-gray-400 dark:hover:bg-gray-700"
               onClick={() => {
                 setOpen(false);
                 onDelete?.(guest.id);

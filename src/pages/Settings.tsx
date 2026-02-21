@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { db } from "../firebase/firebaseConfig";
+import { auth, db } from "../firebase/firebaseConfig";
+import { Role } from "../utils/permissions";
 import {
   doc,
   onSnapshot,
@@ -19,28 +20,13 @@ type AppSettings = {
   archiveRetentionDays: number;
 };
 
-type PermissionBlock = {
-  view: boolean;
-  edit?: boolean;
-  delete?: boolean;
-  export?: boolean;
-};
-
-type Permissions = {
-  guests: PermissionBlock;
-  rooms: PermissionBlock;
-  housekeeping: PermissionBlock;
-  settings: PermissionBlock;
-};
-
-type UserRole = "admin" | "manager" | "receptionist" | "housekeeping";
+type UserRole = "admin" | "manager" | "staff" | "housekeeping";
 
 type UserDoc = {
   id: string;
   name: string;
   email: string;
   role: UserRole;
-  permissions: Permissions;
 };
 
 const defaultAppSettings: AppSettings = {
@@ -50,33 +36,6 @@ const defaultAppSettings: AppSettings = {
   currency: "PHP",
   darkMode: false,
   archiveRetentionDays: 90,
-};
-
-const defaultPermissionsByRole: Record<UserRole, Permissions> = {
-  admin: {
-    guests: { view: true, edit: true, delete: true, export: true },
-    rooms: { view: true, edit: true },
-    housekeeping: { view: true, edit: true },
-    settings: { view: true, edit: true },
-  },
-  manager: {
-    guests: { view: true, edit: true, delete: false, export: true },
-    rooms: { view: true, edit: true },
-    housekeeping: { view: true, edit: true },
-    settings: { view: true, edit: false },
-  },
-  receptionist: {
-    guests: { view: true, edit: true, delete: false, export: true },
-    rooms: { view: true, edit: false },
-    housekeeping: { view: true, edit: false },
-    settings: { view: false, edit: false },
-  },
-  housekeeping: {
-    guests: { view: true, edit: false, delete: false, export: false },
-    rooms: { view: true, edit: false },
-    housekeeping: { view: true, edit: true },
-    settings: { view: false, edit: false },
-  },
 };
 
 function clampInt(n: number, min: number, max: number) {
@@ -95,6 +54,9 @@ export default function Settings() {
   // Users & roles
   const [users, setUsers] = useState<UserDoc[]>([]);
   const [usersLoading, setUsersLoading] = useState(true);
+
+  const [myRole, setMyRole] = useState<Role>("staff");
+  const isAdmin = myRole === "admin";
 
   // Load app settings (settings/app)
   useEffect(() => {
@@ -122,35 +84,48 @@ export default function Settings() {
     return () => unsub();
   }, [showToast]);
 
+  useEffect(() => {
+    const uid = auth.currentUser?.uid;
+    if (!uid) return;
+
+    const ref = doc(db, "users", uid);
+    const unsub = onSnapshot(ref, (snap) => {
+      const data = snap.data() as any;
+      setMyRole((data?.role as UserRole) ?? "staff");
+    });
+
+    return () => unsub();
+  }, []);
+
   // Load users (optional)
   useEffect(() => {
+    if (!isAdmin) {
+      setUsers([]);
+      setUsersLoading(false);
+      return;
+    }
+
     const ref = collection(db, "users");
     const unsub = onSnapshot(
       ref,
       (snap) => {
         const list: UserDoc[] = snap.docs.map((d) => {
           const u = d.data() as any;
-          const role: UserRole = (u.role as UserRole) ?? "receptionist";
-
-          return {
-            id: d.id,
-            name: u.name ?? "",
-            email: u.email ?? "",
-            role,
-            permissions: (u.permissions ?? defaultPermissionsByRole[role]) as Permissions,
-          };
+          const role: UserRole = (u.role as UserRole) ?? "staff";
+          return { id: d.id, name: u.name ?? "", email: u.email ?? "", role };
         });
+
         setUsers(list);
         setUsersLoading(false);
       },
       (err) => {
         console.error(err);
         setUsersLoading(false);
-        // Don’t block the whole page if users collection isn’t ready yet
       }
     );
+
     return () => unsub();
-  }, []);
+  }, [isAdmin]);
 
   const canShowUsers = useMemo(() => users.length > 0 || !usersLoading, [users, usersLoading]);
 
@@ -179,32 +154,11 @@ export default function Settings() {
   const updateUserRole = async (userId: string, role: UserRole) => {
     try {
       const ref = doc(db, "users", userId);
-      await updateDoc(ref, {
-        role,
-        permissions: defaultPermissionsByRole[role],
-      });
+      await updateDoc(ref, { role });
       showToast("Role updated");
     } catch (e) {
       console.error(e);
       showToast("Failed to update role");
-    }
-  };
-
-  const toggleUserPermission = async (
-    userId: string,
-    section: keyof Permissions,
-    key: keyof PermissionBlock,
-    value: boolean
-  ) => {
-    try {
-      const ref = doc(db, "users", userId);
-      // Firestore nested update
-      await updateDoc(ref, {
-        [`permissions.${section}.${key}`]: value,
-      } as any);
-    } catch (e) {
-      console.error(e);
-      showToast("Failed to update permission");
     }
   };
 
@@ -224,11 +178,10 @@ export default function Settings() {
           <button
             onClick={saveAppSettings}
             disabled={saving || appLoading}
-            className={`px-4 py-2 rounded-xl transition ${
-              saving || appLoading
-                ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                : "bg-gray-900 text-white hover:bg-gray-800"
-            }`}
+            className={`px-4 py-2 rounded-xl transition ${saving || appLoading
+              ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+              : "bg-gray-900 text-white hover:bg-gray-800"
+              }`}
           >
             {saving ? "Saving..." : "Save"}
           </button>
@@ -330,7 +283,7 @@ export default function Settings() {
       </div>
 
       {/* Users & Roles */}
-      {canShowUsers && (
+      {isAdmin && canShowUsers && (
         <div className="max-w-6xl mx-auto w-full mt-8 bg-white dark:bg-slate-600 border border-gray-700 dark:border-gray-200 rounded-2xl shadow-md p-6">
           <h2 className="text-xl font-bold text-gray-900 dark:text-gray-200">Users & Roles</h2>
           <p className="text-gray-500 dark:text-gray-400 mt-2">
@@ -346,98 +299,33 @@ export default function Settings() {
             </p>
           ) : (
             <div className="mt-6 overflow-x-auto">
-              <table className="min-w-full text-sm">
-                <thead className="bg-gray-50 text-gray-600">
+              <table className="min-w-full text-sm border border-gray-700 dark:border-gray-200">
+                <thead className="bg-gray-400 text-gray-600">
                   <tr className="text-left">
-                    <th className="p-3 text-gray-100 dark:text-gray-100">Name</th>
-                    <th className="p-3 text-gray-100 dark:text-gray-100">Email</th>
-                    <th className="p-3 text-gray-100 dark:text-gray-100">Role</th>
-                    <th className="p-3 text-gray-100 dark:text-gray-100">Guests</th>
-                    <th className="p-3 text-gray-100 dark:text-gray-100">Rooms</th>
-                    <th className="p-3 text-gray-100 dark:text-gray-100">Housekeeping</th>
-                    <th className="p-3">Settings</th>
+                    <th className="p-3">Name</th>
+                    <th className="p-3">Email</th>
+                    <th className="p-3">Role</th>
                   </tr>
                 </thead>
                 <tbody>
                   {users.map((u) => (
                     <tr key={u.id} className="border-t border-gray-100">
-                      <td className="p-3 font-medium text-gray-900">{u.name || "—"}</td>
-                      <td className="p-3 text-gray-700">{u.email || "—"}</td>
+                      <td className="p-3 font-medium text-gray-900 dark:text-gray-100">{u.name || "—"}</td>
+                      <td className="p-3 text-gray-700 dark:text-gray-300">{u.email || "—"}</td>
 
                       <td className="p-3">
                         <select
                           value={u.role}
                           onChange={(e) => updateUserRole(u.id, e.target.value as UserRole)}
-                          className="px-3 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-900"
+                          className="px-3 py-2 rounded-xl text-white border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-900"
                         >
                           <option value="admin">Admin</option>
                           <option value="manager">Manager</option>
-                          <option value="receptionist">Receptionist</option>
+                          <option value="staff">Staff</option>
                           <option value="housekeeping">Housekeeping</option>
                         </select>
                       </td>
 
-                      {(["guests", "rooms", "housekeeping", "settings"] as (keyof Permissions)[]).map(
-                        (section) => (
-                          <td key={section} className="p-3">
-                            <div className="flex flex-wrap gap-2">
-                              <label className="flex items-center gap-2 text-xs bg-gray-50 border border-gray-200 rounded-xl px-3 py-2">
-                                <input
-                                  type="checkbox"
-                                  checked={!!u.permissions?.[section]?.view}
-                                  onChange={(e) =>
-                                    toggleUserPermission(u.id, section, "view", e.target.checked)
-                                  }
-                                  className="h-4 w-4"
-                                />
-                                View
-                              </label>
-
-                              {"edit" in (u.permissions?.[section] ?? {}) && (
-                                <label className="flex items-center gap-2 text-xs bg-gray-50 border border-gray-200 rounded-xl px-3 py-2">
-                                  <input
-                                    type="checkbox"
-                                    checked={!!u.permissions?.[section]?.edit}
-                                    onChange={(e) =>
-                                      toggleUserPermission(u.id, section, "edit", e.target.checked)
-                                    }
-                                    className="h-4 w-4"
-                                  />
-                                  Edit
-                                </label>
-                              )}
-
-                              {section === "guests" && (
-                                <>
-                                  <label className="flex items-center gap-2 text-xs bg-gray-50 border border-gray-200 rounded-xl px-3 py-2">
-                                    <input
-                                      type="checkbox"
-                                      checked={!!u.permissions?.guests?.delete}
-                                      onChange={(e) =>
-                                        toggleUserPermission(u.id, "guests", "delete", e.target.checked)
-                                      }
-                                      className="h-4 w-4"
-                                    />
-                                    Delete
-                                  </label>
-
-                                  <label className="flex items-center gap-2 text-xs bg-gray-50 border border-gray-200 rounded-xl px-3 py-2">
-                                    <input
-                                      type="checkbox"
-                                      checked={!!u.permissions?.guests?.export}
-                                      onChange={(e) =>
-                                        toggleUserPermission(u.id, "guests", "export", e.target.checked)
-                                      }
-                                      className="h-4 w-4"
-                                    />
-                                    Export
-                                  </label>
-                                </>
-                              )}
-                            </div>
-                          </td>
-                        )
-                      )}
                     </tr>
                   ))}
                 </tbody>

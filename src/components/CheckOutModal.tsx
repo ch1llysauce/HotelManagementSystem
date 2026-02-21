@@ -235,7 +235,7 @@ export default function CheckoutModal({ guestId, roomId, onClose }: CheckoutModa
             onChange={(e) =>
               setPaymentMethod(e.target.value as "cash" | "card" | "gcash")
             }
-            className="w-full border rounded-lg p-2"
+            className="w-full border rounded-lg p-2 text-gray-50"
           >
             <option value="cash">Cash</option>
             <option value="card">Card</option>
@@ -246,7 +246,7 @@ export default function CheckoutModal({ guestId, roomId, onClose }: CheckoutModa
         <div className="flex justify-end gap-3 mt-8">
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700"
+            className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-gray-50"
           >
             Cancel
           </button>
