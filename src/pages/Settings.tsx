@@ -21,12 +21,14 @@ type AppSettings = {
 };
 
 type UserRole = "admin" | "manager" | "staff" | "housekeeping";
+type UserStatus = "active" | "inactive";
 
 type UserDoc = {
   id: string;
   name: string;
   email: string;
   role: UserRole;
+  status: UserStatus;
 };
 
 const defaultAppSettings: AppSettings = {
@@ -57,6 +59,7 @@ export default function Settings() {
 
   const [myRole, setMyRole] = useState<Role>("staff");
   const isAdmin = myRole === "admin";
+  const myUid = auth.currentUser?.uid;
 
   // Load app settings (settings/app)
   useEffect(() => {
@@ -112,7 +115,8 @@ export default function Settings() {
         const list: UserDoc[] = snap.docs.map((d) => {
           const u = d.data() as any;
           const role: UserRole = (u.role as UserRole) ?? "staff";
-          return { id: d.id, name: u.name ?? "", email: u.email ?? "", role };
+          const status: UserStatus = (u.status as UserStatus) ?? "inactive";
+          return { id: d.id, name: u.name ?? "", email: u.email ?? "", role, status };
         });
 
         setUsers(list);
@@ -159,6 +163,17 @@ export default function Settings() {
     } catch (e) {
       console.error(e);
       showToast("Failed to update role");
+    }
+  };
+
+  const updateUserStatus = async (userId: string, status: "active" | "inactive") => {
+    try {
+      const ref = doc(db, "users", userId);
+      await updateDoc(ref, { status });
+      showToast("Status updated");
+    } catch (e) {
+      console.error(e);
+      showToast("Failed to update status");
     }
   };
 
@@ -305,6 +320,7 @@ export default function Settings() {
                     <th className="p-3">Name</th>
                     <th className="p-3">Email</th>
                     <th className="p-3">Role</th>
+                    <th className="p-3">Status</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -323,6 +339,18 @@ export default function Settings() {
                           <option value="manager">Manager</option>
                           <option value="staff">Staff</option>
                           <option value="housekeeping">Housekeeping</option>
+                        </select>
+                      </td>
+
+                      <td className="p-3">
+                        <select
+                          value={u.status}
+                          disabled={u.id === myUid} // Prevent changing own status
+                          onChange={(e) => updateUserStatus(u.id, e.target.value as UserStatus)}
+                          className="px-3 py-2 rounded-xl text-white border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-900"
+                        >
+                          <option value="active">Active</option>
+                          <option value="inactive">Inactive</option>
                         </select>
                       </td>
 

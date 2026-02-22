@@ -279,7 +279,7 @@ Notes: ${notes || "None"}
           <input
             type="text"
             className="border border-gray-300 rounded-lg px-3 py-3 text-sm
-           focus:outline-none focus:ring-2 focus:ring-blue-400"
+           focus:outline-none focus:ring-2 focus:ring-blue-400 text-white"
             placeholder="Full Name"
             value={name}
             onChange={(e) => {
@@ -304,14 +304,14 @@ Notes: ${notes || "None"}
               }
               setPhone(value);
             }}
-            className="border border-gray-300 rounded-lg px-3 py-3 text-sm
+            className="border border-gray-300 rounded-lg px-3 py-3 text-white text-sm
            focus:outline-none focus:ring-2 focus:ring-blue-400"
 
           />
           <input
             type="email"
             className="border border-gray-300 rounded-lg px-3 py-3 text-sm
-           focus:outline-none focus:ring-2 focus:ring-blue-400"
+           focus:outline-none focus:ring-2 focus:ring-blue-400 text-white"
             placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -388,7 +388,7 @@ Notes: ${notes || "None"}
               setDeposit(e.target.value);
             }}
             className={`border border-gray-300 rounded-lg px-3 py-3 text-sm
-           focus:outline-none focus:ring-2 focus:ring-blue-400
+           focus:outline-none focus:ring-2 focus:ring-blue-400 text-white
       ${isDepositTooHigh
                 ? "border-red-500 focus:ring-red-400"
                 : "border-gray-300 focus:ring-blue-400"
@@ -416,7 +416,7 @@ Notes: ${notes || "None"}
 
           <textarea
             rows={3}
-            className="border border-gray-300 rounded-lg p-3 resize-none focus:outline-none focus:ring-2 focus:ring-blue-400"
+            className="border border-gray-300 rounded-lg p-3 resize-none text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
             placeholder="Special Requests / Notes"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}

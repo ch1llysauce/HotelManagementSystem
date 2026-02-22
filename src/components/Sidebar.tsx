@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import SidebarItem from "./SidebarItem";
 import ConfirmDialog from "./LogoutConfirmDialog";
 import { canAccess, Role } from "../utils/permissions";
+import logoHotel from "../assets/logo.png";
 
 interface SidebarProps {
   visible: boolean;
@@ -53,7 +54,7 @@ export default function Sidebar({ visible, onClose, role, userName }: SidebarPro
           ✕
         </button>
 
-        <img src="/logo.png" className="w-24 mx-auto mb-4" />
+        <img src={logoHotel} className="w-20 mx-auto mb-4" />
 
         <p className="text-center font-semibold">
           Good day, {userName}!

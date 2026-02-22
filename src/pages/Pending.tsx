@@ -1,7 +1,10 @@
 import { signOut } from "firebase/auth";
 import { auth } from "../firebase/firebaseConfig";
+import { useNavigate } from "react-router-dom";
 
 export default function Pending() {
+  const nav = useNavigate();
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
       <div className="w-full max-w-md bg-white rounded-3xl shadow p-6">
@@ -13,7 +16,7 @@ export default function Pending() {
 
         <div className="mt-6 flex gap-3">
           <button
-            onClick={() => window.location.reload()}
+            onClick={() => nav("/dashboard", { replace: true })}
             className="flex-1 px-4 py-2 rounded-xl text-white bg-slate-500 hover:bg-gray-800 transition"
           >
             Refresh

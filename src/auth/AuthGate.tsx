@@ -11,7 +11,7 @@ import {
   updateDoc,
 } from "firebase/firestore";
 
-type UserDoc = {
+export type UserDoc = {
   createdAt?: any;
   email: string;
   lastLoginAt?: any;

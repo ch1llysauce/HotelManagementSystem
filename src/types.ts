@@ -1,5 +1,5 @@
 import { Timestamp } from "firebase/firestore";
-export type RoomStatus = "Available" | "Reserved" | "Cleaning" | "Housekeeping";
+export type RoomStatus = "Available" | "Reserved" | "Occupied" | "Cleaning" | "Housekeeping";
 export type GuestStatus = "reserved" | "checked-in"  | "due-to-check-in" | "due-to-check-out"  | "overdue-check-out" | "checked-out";
 
 export interface Room {
@@ -16,8 +16,6 @@ export interface Room {
 export interface RoomDocument extends Room {
   id: string;
 }
-
-
 
 export interface Guest {
   id: string;
