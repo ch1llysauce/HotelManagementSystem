@@ -1,4 +1,6 @@
 import { RoomDocument, RoomStatus } from "../types";
+import { useState } from "react";
+import DeleteConfirmModal from "./DeleteConfirmModal";
 
 interface RoomCardProps {
   room: RoomDocument;
@@ -7,6 +9,8 @@ interface RoomCardProps {
 }
 
 export function RoomCard({ room, onStatusChange, onDelete }: RoomCardProps) {
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
   return (
     <div className="p-4 border rounded-lg shadow hover:shadow-lg transition text-black dark:text-white">
       <h2 className="font-semibold text-lg">
@@ -36,11 +40,22 @@ export function RoomCard({ room, onStatusChange, onDelete }: RoomCardProps) {
       <div className="mt-3 flex justify-between">
         <button
           className="bg-red-600 text-white px-3 py-1 rounded"
-          onClick={() => onDelete(room.id)}
+          onClick={() => setConfirmOpen(true)}
         >
           Delete
         </button>
       </div>
+
+      {confirmOpen && (
+        <DeleteConfirmModal
+          onCancel={() => setConfirmOpen(false)}
+          onConfirm={() => {
+            setConfirmOpen(false);
+            onDelete(room.id);
+          }}
+        />
+      )}
     </div>
+
   );
 }

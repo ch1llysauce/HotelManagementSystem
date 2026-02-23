@@ -53,30 +53,49 @@ export default function ArchivedGuests() {
     <div className="p-8">
       <h1 className="text-3xl font-bold text-black dark:text-white mb-6">Archived Guests History</h1>
 
-      {/* Filters */}
-      <div className="flex flex-col md:flex-row gap-4 mb-6">
-        <input
-          type="text"
-          placeholder="Search by name or room"
-          className="border rounded-lg p-2 flex-1"
-          value={searchTerm}
-          onChange={e => setSearchTerm(e.target.value)}
-        />
+        {/* Filters */}
+        <div className="w-full max-w-5xl mx-auto mb-6">
+  <div className="flex flex-col md:flex-row gap-4">
 
-        <input
-          type="date"
-          className="border rounded-lg p-2 text-gray-100 dark:text-gray-100"
-          value={startDate}
-          onChange={e => setStartDate(e.target.value)}
-        />
+    <div className="flex flex-col flex-1">
+      <label className="text-sm text-gray-600 dark:text-gray-300 mb-1">
+        Search
+      </label>
+      <input
+        type="text"
+        placeholder="Name or Room Number"
+        className="border rounded-lg p-3 w-full text-gray-50"
+        value={searchTerm}
+        onChange={e => setSearchTerm(e.target.value)}
+      />
+    </div>
 
-        <input
-          type="date"
-          className="border rounded-lg p-2 text-gray-100 dark:text-gray-100"
-          value={endDate}
-          onChange={e => setEndDate(e.target.value)}
-        />
-      </div>
+    <div className="flex flex-col w-full md:w-48">
+      <label className="text-sm text-gray-600 dark:text-gray-300 mb-1">
+        Start Date
+      </label>
+      <input
+        type="date"
+        className="border rounded-lg p-3 w-full text-gray-50"
+        value={startDate}
+        onChange={e => setStartDate(e.target.value)}
+      />
+    </div>
+
+    <div className="flex flex-col w-full md:w-48">
+      <label className="text-sm text-gray-600 dark:text-gray-300 mb-1">
+        End Date
+      </label>
+      <input
+        type="date"
+        className="border rounded-lg p-3 w-full text-gray-50"
+        value={endDate}
+        onChange={e => setEndDate(e.target.value)}
+      />
+    </div>
+
+  </div>
+</div>
 
       {/* Guests Table */}
       <div className="overflow-x-auto bg-white shadow rounded-lg">
@@ -123,7 +142,7 @@ export default function ArchivedGuests() {
       </div>
 
       {/* Receipt Modal */}
-       {selectedGuest && (
+      {selectedGuest && (
         <ReceiptModal guest={selectedGuest} onClose={() => setSelectedGuest(null)} />
       )}
     </div>

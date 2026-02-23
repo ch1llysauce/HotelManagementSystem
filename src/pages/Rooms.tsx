@@ -29,20 +29,19 @@ export default function RoomsPage() {
 
       <RoomsOverview rooms={rooms} />
 
-      <AddRoomForm onAdd={addRoom} />
-
+{/* <AddRoomForm onAdd={addRoom} /> */}
       <RoomsByFloor
         rooms={rooms}
         onStatusChange={(id, status) => updateRoom(id, { status })}
         onDelete={deleteRoomById}
       />
 
-      <button
+      {/* <button
         onClick={seedRooms}
         className="mb-4 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
       >
         Seed Rooms (Dev Only)
-      </button>
+      </button> */}
 
     </div>
   );

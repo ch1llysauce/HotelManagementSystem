@@ -120,14 +120,17 @@ export default function Dashboard() {
 
   useLayoutEffect(() => {
     window.scrollTo(0, 0);
-    document.documentElement.scrollTop = 0;
-    document.body.scrollTop = 0;
 
     const prevBody = document.body.style.overflow;
     const prevHtml = document.documentElement.style.overflow;
 
-    document.body.style.overflow = "hidden";
-    document.documentElement.style.overflow = "hidden";
+    if (!mobile) {
+      document.body.style.overflow = "hidden";
+      document.documentElement.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "auto";
+      document.documentElement.style.overflow = "auto";
+    }
 
     return () => {
       document.body.style.overflow = prevBody;
@@ -135,7 +138,7 @@ export default function Dashboard() {
     };
   }, [mobile]);
 
-  
+
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user) => {
       if (!user) {
@@ -150,7 +153,12 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <div className="h-screen overflow-hidden overscroll-none bg-gray-50 dark:bg-transparent lg:ml-64 max-w-4xl">
+    <div
+  className={`
+    ${mobile ? "min-h-screen overflow-y-auto" : "h-screen overflow-hidden"}
+    overscroll-none bg-gray-50 dark:bg-transparent lg:ml-64 max-w-4xl
+  `}
+>
       <div className="h-full mx-auto w-full max-w-screen-xl px-4 md:px-6 py-4">
         <div className="h-full flex flex-col min-h-0 gap-4">
 
@@ -199,7 +207,10 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="flex-1 min-h-0 overflow-y-auto overscroll-none pt-10 scroll-pt-10 pb-10 scroll-pb-10">
+          <div className={`
+  flex-1 min-h-0
+  ${mobile ? "overflow-visible" : "overflow-y-auto"}
+`}>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 min-h-0">
               <Panel title="Recent Check-outs" className="lg:col-span-2 h-full min-h-0">
                 {recentCheckouts.length === 0 ? (

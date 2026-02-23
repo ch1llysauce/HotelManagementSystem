@@ -151,6 +151,9 @@ Room: ${selectedRoom.number} (${selectedRoom.type})
 Check-In Date: ${checkInDate}
 Check-Out Date: ${checkOutDate}
 Notes: ${notes || "None"}
+Deposit: ₱${deposit} (${depositMethod})
+Total Cost: ₱${totalCost}
+Balance After Deposit: ₱${totalCost - depositAmount}
   `;
 
     const isConfirmed = window.confirm(confirmMessage);
@@ -202,7 +205,7 @@ Notes: ${notes || "None"}
           expectedCheckOut: Timestamp.fromDate(expectedCheckOut),
           checkedOutAt: null,
           overdueSince: null,
-
+          balance: totalCost - depositAmount,
           notes,
           deposit: depositAmount,
           extras: 0,

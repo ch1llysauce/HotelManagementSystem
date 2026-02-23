@@ -73,7 +73,7 @@ export function AddRoomForm({ onAdd }: AddRoomFormProps) {
           onChange={(e) =>
             setForm({ ...form, number: digitsOnly(e.target.value) })
           }
-          className="border p-2 rounded"
+          className="border p-2 rounded text-gray-50"
         />
 
         <select
@@ -93,7 +93,7 @@ export function AddRoomForm({ onAdd }: AddRoomFormProps) {
           onChange={(e) =>
             setForm({ ...form, price: digitsOnly(e.target.value) })
           }
-          className="border p-2 rounded"
+          className="border p-2 rounded text-gray-50"
         />
 
         <input
@@ -103,14 +103,14 @@ export function AddRoomForm({ onAdd }: AddRoomFormProps) {
           onChange={(e) =>
             setForm({ ...form, floor: digitsOnly(e.target.value) })
           }
-          className="border p-2 rounded"
+          className="border p-2 rounded text-gray-50"
         />
 
         <input
           placeholder="Description"
           value={form.description}
           onChange={(e) => setForm({ ...form, description: e.target.value })}
-          className="border p-2 rounded flex-1"
+          className="border p-2 rounded flex-1 text-gray-50"
         />
 
         <button
