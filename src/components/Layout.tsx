@@ -34,7 +34,7 @@ export default function Layout() {
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user) => {
-      try{
+      try {
         setLoadingUser(true);
         if (!user) {
           nav("/login", { replace: true });
@@ -44,22 +44,22 @@ export default function Layout() {
         const userRef = doc(db, "users", user.uid);
         const snap = await getDoc(userRef);
 
-        if(!snap.exists()) {
+        if (!snap.exists()) {
           nav("/login", { replace: true });
           return;
         }
 
-        const data = snap.data() as {name?: string; role?: string};
+        const data = snap.data() as { name?: string; role?: string };
 
         setUserName(data.name?.trim() || "User");
 
-        if(data.role && validRoles.includes(data.role as Role)) {
+        if (data.role && validRoles.includes(data.role as Role)) {
           setRole(data.role as Role);
         } else {
           setRole("staff");
         }
       } finally {
-        setLoadingUser(false);  
+        setLoadingUser(false);
       }
     });
 
@@ -68,7 +68,16 @@ export default function Layout() {
 
   return (
     <div className="flex min-h-screen overflow-hidden bg-gray-100 dark:bg-gray-900 transition-colors duration-500">
-      <Sidebar visible={sidebarVisible} onClose={() => setSidebarVisible(false)} role={role} userName={loadingUser ? "Loading..." : userName} />
+      <Sidebar
+        visible={sidebarVisible}
+        isMobile={isMobile}
+        onClose={() => setSidebarVisible(false)}
+        onItemClick={() => {
+
+          if (isMobile) setSidebarVisible(false);
+        }}
+        role={role}
+        userName={loadingUser ? "Loading..." : userName} />
 
       {isMobile && !sidebarVisible && (
         <button
@@ -81,11 +90,24 @@ export default function Layout() {
         </button>
       )}
 
+      {isMobile && sidebarVisible && (
+        <div
+          onClick={() => setSidebarVisible(false)}
+          className="
+      fixed inset-0
+      bg-black/40
+      backdrop-blur-sm
+      z-40
+      transition-all duration-300
+    "
+        />
+      )}
+
       <main
         className={`
           flex-1 overflow-y-auto bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-50 p-8 md:p-12 transition-all duration-500
-          ${sidebarVisible && !isMobile ? "md:ml-64" : ""}
-          ${sidebarVisible && isMobile ? "ml-64" : "ml-0"}
+          ${sidebarVisible && !isMobile ? "md:ml-64" : "md:ml-0"}
+          ml-0
         `}
       >
         <Outlet />

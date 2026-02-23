@@ -9,12 +9,14 @@ import logoHotel from "../assets/logo.png";
 
 interface SidebarProps {
   visible: boolean;
+  isMobile: boolean;
   onClose: () => void;
+  onItemClick: () => void;
   role: Role;
   userName: string;
 }
 
-export default function Sidebar({ visible, onClose, role, userName }: SidebarProps) {
+export default function Sidebar({ visible, isMobile, onItemClick, onClose, role, userName }: SidebarProps) {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const nav = useNavigate();
 
@@ -66,31 +68,31 @@ export default function Sidebar({ visible, onClose, role, userName }: SidebarPro
 
         <nav className="space-y-2">
           {canAccess(role, "dashboard") && (
-            <SidebarItem label="Dashboard" to="/" />
+            <SidebarItem label="Dashboard" to="/"  onClick={isMobile ? onItemClick : undefined}/>
           )}
 
           {canAccess(role, "checkin") && (
-            <SidebarItem label="Check In" to="/checkin" />
+            <SidebarItem label="Check In" to="/checkin" onClick={isMobile ? onItemClick : undefined}/>
           )}
 
           {canAccess(role, "guests") && (
-            <SidebarItem label="Guests" to="/guests" />
+            <SidebarItem label="Guests" to="/guests"  onClick={isMobile ? onItemClick : undefined}/>
           )}
 
           {canAccess(role, "rooms") && (
-            <SidebarItem label="Rooms" to="/rooms" />
+            <SidebarItem label="Rooms" to="/rooms"  onClick={isMobile ? onItemClick : undefined}/>
           )}
 
           {canAccess(role, "archivedGuests") && (
-            <SidebarItem label="Archived Guests" to="/archived-guests" />
+            <SidebarItem label="Archived Guests" to="/archived-guests" onClick={isMobile ? onItemClick : undefined} />
           )}
 
           {canAccess(role, "housekeeping") && (
-            <SidebarItem label="Housekeeping" to="/housekeeping" />
+            <SidebarItem label="Housekeeping" to="/housekeeping"  onClick={isMobile ? onItemClick : undefined}/>
           )}
 
           {canAccess(role, "settings") && (
-            <SidebarItem label="Settings" to="/settings" />
+            <SidebarItem label="Settings" to="/settings"  onClick={isMobile ? onItemClick : undefined}/>
           )}
         </nav>
 
