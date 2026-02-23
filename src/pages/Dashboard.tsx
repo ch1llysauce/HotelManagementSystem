@@ -116,7 +116,7 @@ export default function Dashboard() {
   const loading = roomsSnap.loading || guestsSnap.loading;
   const permissionDenied = roomsSnap.err === "permission-denied" || guestsSnap.err === "permission-denied";
 
-  const mobile = useIsMobile(1200);
+  const mobile = useIsMobile(768);
 
   useLayoutEffect(() => {
     window.scrollTo(0, 0);
