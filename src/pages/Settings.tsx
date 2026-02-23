@@ -214,7 +214,7 @@ export default function Settings() {
               <input
                 value={app.hotelName}
                 onChange={(e) => setApp((p) => ({ ...p, hotelName: e.target.value }))}
-                className="w-full px-4 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-900"
+                className="w-full px-4 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-900 text-white"
                 placeholder="e.g., Chill Hotel"
               />
 

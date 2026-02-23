@@ -63,15 +63,17 @@ export const ROLE_PERMS: Record<Role, RolePerms> = {
     },
 };
 
-export const canAccess = (role: Role, module: ModuleKey): boolean => {
+export const canAccess = (role: Role | null | undefined, module: ModuleKey): boolean => {
+    if(!role) return false;
     return ROLE_PERMS[role]?.[module]?.view === true;
 };
 
 export const canPerform = (
-    role: Role,
+    role: Role | null | undefined,
     module: ModuleKey,
     action: ActionKey
 ): boolean => {
+    if(!role) return false;
     const perms = ROLE_PERMS[role][module];
     if (!perms.view) return false;
     return perms[action] === true;

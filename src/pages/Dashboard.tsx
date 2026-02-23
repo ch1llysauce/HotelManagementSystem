@@ -4,6 +4,11 @@ import { db } from "../firebase/firebaseConfig";
 import { Guest, RoomDocument } from "../types";
 import DashboardCard from "../components/DashboardCard";
 import { FiUsers, FiHome, FiCheckCircle } from "react-icons/fi";
+import { doc, getDoc } from "firebase/firestore";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "../firebase/firebaseConfig"; // adjust
+import type { Role } from "../utils/permissions";
+import { canAccess } from "../utils/permissions";
 
 const todayRange = () => {
   const n = new Date();
@@ -58,6 +63,9 @@ function useCollectionSnap<T>(path: string) {
 export default function Dashboard() {
   const roomsSnap = useCollectionSnap<RoomDocument>("rooms");
   const guestsSnap = useCollectionSnap<Guest>("guests");
+
+
+  const [role, setRole] = useState<Role | null>(null);
 
   const { roomsKpi, guestKpi, recentCheckouts } = useMemo(() => {
     const rooms = roomsSnap.data;
@@ -127,6 +135,20 @@ export default function Dashboard() {
     };
   }, [mobile]);
 
+  
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        setRole(null);
+        return;
+      }
+      const snap = await getDoc(doc(db, "users", user.uid));
+      setRole((snap.data()?.role as Role) ?? null);
+    });
+
+    return () => unsub();
+  }, []);
+
   return (
     <div className="h-screen overflow-hidden overscroll-none bg-gray-50 dark:bg-transparent lg:ml-64 max-w-4xl">
       <div className="h-full mx-auto w-full max-w-screen-xl px-4 md:px-6 py-4">
@@ -142,10 +164,10 @@ export default function Dashboard() {
               </p>
             </div>
 
-            <div className="flex flex-wrap justify-center gap-4 mb-3">
-              <DashboardCard title="Check-In" link="/checkin" icon={<FiCheckCircle size={22} />} />
-              <DashboardCard title="Guest List" link="/guests" icon={<FiUsers size={22} />} />
-              <DashboardCard title="Room Status" link="/rooms" icon={<FiHome size={22} />} />
+            <div className="flex flex-wrap justify-center gap-4 mb-3 ">
+              <DashboardCard title="Check-In" link="/checkin" icon={<FiCheckCircle size={22} />} disabled={!canAccess(role, "checkin")} />
+              <DashboardCard title="Guest List" link="/guests" icon={<FiUsers size={22} />} disabled={!canAccess(role, "guests")} />
+              <DashboardCard title="Room Status" link="/rooms" icon={<FiHome size={22} />} disabled={!canAccess(role, "rooms")} />
             </div>
 
             {(loading || permissionDenied) && (
@@ -208,7 +230,7 @@ export default function Dashboard() {
                   <StatRow label="Outstanding" value={guestKpi.outstandingBalance} prefix="₱" />
                 </Panel>
 
-                <Panel title="Front Desk Today" className= "flex-1 min-h-0">
+                <Panel title="Front Desk Today" className="flex-1 min-h-0">
                   <StatRow label="Arrivals" value={guestKpi.arrivalsToday} />
                   <StatRow label="Departures" value={guestKpi.departuresToday} />
                   <StatRow label="Checked out" value={guestKpi.checkedOutToday} />

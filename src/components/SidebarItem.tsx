@@ -3,12 +3,14 @@ import { NavLink } from "react-router-dom";
 interface SidebarItemProps {
   label: string;
   to: string;
+  onClick?: () => void;
 }
 
-export default function SidebarItem({ label, to }: SidebarItemProps) {
+export default function SidebarItem({ label, to, onClick }: SidebarItemProps) {
   return (
     <NavLink
       to={to}
+      onClick={onClick}
       className={({ isActive }) =>
         `
         block w-full py-3 px-4 rounded-lg cursor-pointer font-medium

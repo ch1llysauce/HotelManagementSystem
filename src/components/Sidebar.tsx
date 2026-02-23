@@ -118,4 +118,3 @@ export default function Sidebar({ visible, onClose, role, userName }: SidebarPro
     </>
   );
 }
-
