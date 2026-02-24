@@ -301,86 +301,79 @@ Balance After Deposit: ₱${totalCost - depositAmount}
 
 
   return (
+    
     <div
-      className={`
-      ${mobile ? "min-h-screen overflow-y-auto" : "h-screen overflow-hidden"}
-      overscroll-none bg-gray-50 dark:bg-transparent lg:ml-64
-      flex items-start justify-center
-    `}
-    >
-      <div className="w-full max-w-lg h-full px-4 md:px-6 py-4">
-        <div className="h-full bg-white dark:bg-slate-600 rounded-3xl shadow-lg p-6 flex flex-col min-h-0">
-          <div className="mb-4 text-center">
-            <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900 dark:text-gray-200">
-              Guest Check-In
-            </h1>
-            <p className="mt-1 text-gray-500 dark:text-gray-400 text-sm md:text-base">
-              Registration of guests, make sure to input all the necessary information.
-            </p>
-          </div>
+  className={`
+    ${mobile ? "overflow-hidden" : "h-full"} overflow-hidden flex items-start justify-center bg-gray-50 dark:bg-transparent`}>
+      <div className="w-full max-w-lg h-full bg-white dark:bg-slate-600 rounded-3xl shadow-lg p-6 overflow-hidden">
+        <div className="mb-4 text-center">
+          <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900 dark:text-gray-200">
+            Guest Check-In
+          </h1>
+          <p className="mt-1 text-gray-500 dark:text-gray-400 text-sm md:text-base">
+            Registration of guests, make sure to input all the necessary information.
+          </p>
+        </div>
 
-          <form onSubmit={handleSubmit} className={`
-            flex flex-col gap-2 min-h-0
-            ${mobile ? "overflow-visible" : "overflow-y-auto pr-1"}
-          `}>
-            <input
-              type="text"
-              className="border border-gray-300 rounded-lg px-3 py-3 text-white text-sm
-           focus:outline-none focus:ring-2 focus:ring-blue-400"
-              placeholder="Full Name"
-              value={name}
-              onChange={(e) => {
-                const sanitized = e.target.value.replace(/[^a-zA-Z\s]/g, "");
-                setName(sanitized);
-              }}
-            />
-
-            <small className="text-gray-400 dark:text-gray-200">Include country code for international guests</small>
-            <input
-              type="tel"
-              id="phone"
-              name="phone"
-              placeholder="Phone Number (+xx Format)"
-              value={phone}
-              onChange={(e) => {
-                let value = e.target.value;
-                if (value.startsWith("+")) {
-                  value = "+" + value.slice(1, 16).replace(/\D/g, "");
-                } else {
-                  value = value.slice(0, 10).replace(/\D/g, "");
-                }
-                setPhone(value);
-              }}
-              className="border border-gray-300 rounded-lg px-3 py-3 text-white text-sm
-           focus:outline-none focus:ring-2 focus:ring-blue-400"
-
-            />
-            <input
-              type="email"
-              className="border border-gray-300 rounded-lg px-3 py-3 text-sm
+        <form onSubmit={handleSubmit} className="flex flex-col gap-2">
+          <input
+            type="text"
+            className="border border-gray-300 rounded-lg px-3 py-3 text-sm
            focus:outline-none focus:ring-2 focus:ring-blue-400 text-white"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
+            placeholder="Full Name"
+            value={name}
+            onChange={(e) => {
+              const sanitized = e.target.value.replace(/[^a-zA-Z\s]/g, "");
+              setName(sanitized);
+            }}
+          />
 
-            <select
-              value={selectedRoomId}
-              onChange={(e) => setSelectedRoomId(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-3 text-white text-sm
+          <small className="text-gray-400 dark:text-gray-200">Include country code for international guests</small>
+          <input
+            type="tel"
+            id="phone"
+            name="phone"
+            placeholder="Phone Number (+xx Format)"
+            value={phone}
+            onChange={(e) => {
+              let value = e.target.value;
+              if (value.startsWith("+")) {
+                value = "+" + value.slice(1, 16).replace(/\D/g, "");
+              } else {
+                value = value.slice(0, 10).replace(/\D/g, "");
+              }
+              setPhone(value);
+            }}
+            className="border border-gray-300 rounded-lg px-3 py-3 text-white text-sm
+           focus:outline-none focus:ring-2 focus:ring-blue-400"
+
+          />
+          <input
+            type="email"
+            className="border border-gray-300 rounded-lg px-3 py-3 text-sm
+           focus:outline-none focus:ring-2 focus:ring-blue-400 text-white"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+
+          <select
+            value={selectedRoomId}
+            onChange={(e) => setSelectedRoomId(e.target.value)}
+            className="border border-gray-300 rounded-lg px-3 py-3 text-white text-sm
            focus:outline-none focus:ring-2 focus:ring-blue-400">
-              <option value="">Select Available Room</option>
-              {rooms
-                .filter(room => room.status === "Available")
-                .map(room => (
-                  <option key={room.id} value={room.id}>
-                    Room {room.number} — {room.type} — ₱{room.price}
-                  </option>
-                ))}
-            </select>
+            <option value="">Select Available Room</option>
+            {rooms
+              .filter(room => room.status === "Available")
+              .map(room => (
+                <option key={room.id} value={room.id}>
+                  Room {room.number} — {room.type} — ₱{room.price}
+                </option>
+              ))}
+          </select>
 
 
-            <div className="flex flex-col sm:flex-row gap-1">
+           <div className="flex flex-col sm:flex-row gap-1">
               {/* Check-In Date */}
               <div className="flex flex-col flex-1">
                 <label
@@ -416,9 +409,9 @@ Balance After Deposit: ₱${totalCost - depositAmount}
                   onChange={(e) => setCheckOutDate(e.target.value)}
                 />
               </div>
-            </div>
+              </div>
 
-            <input
+                <input
               type="number"
               placeholder="Deposit Amount"
               value={deposit}
@@ -435,6 +428,25 @@ Balance After Deposit: ₱${totalCost - depositAmount}
                 setDeposit(e.target.value);
               }}
               className={`border border-gray-300 rounded-lg px-3 py-3 text-sm
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
            focus:outline-none focus:ring-2 focus:ring-blue-400 text-white
       ${isDepositTooHigh
                   ? "border-red-500 focus:ring-red-400"
@@ -461,6 +473,7 @@ Balance After Deposit: ₱${totalCost - depositAmount}
               Estimated total: ₱{roomRate * nights} (Deposit: ₱{deposit})
             </p>
 
+
             <textarea
               rows={3}
               className="border border-gray-300 rounded-lg p-3 resize-none text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
@@ -478,7 +491,6 @@ Balance After Deposit: ₱${totalCost - depositAmount}
             </button>
           </form>
         </div>
-      </div>
-    </div>
+        </div>
   );
 }

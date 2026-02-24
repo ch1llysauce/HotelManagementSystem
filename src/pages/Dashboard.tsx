@@ -154,13 +154,14 @@ export default function Dashboard() {
 
   return (
     <div
-  className={`
+      className={`
     ${mobile ? "min-h-screen overflow-y-auto" : "h-screen overflow-hidden"}
     overscroll-none bg-gray-50 dark:bg-transparent lg:ml-64 max-w-4xl
+    overflow-hidden
   `}
->
-      <div className="h-full mx-auto w-full max-w-screen-xl px-4 md:px-6 py-4">
-        <div className="h-full flex flex-col min-h-0 gap-4">
+    >
+      <div className="mx-auto w-full max-w-screen-xl px-4 md:px-6 py-4 h-full flex flex-col min-h-0">
+        <div className="flex flex-col min-h-0 gap-4 flex-1">
 
           <div className="shrink-0">
             <div className="mb-3 text-center max-w-3xl mx-auto">
@@ -207,10 +208,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className={`
-  flex-1 min-h-0
-  ${mobile ? "overflow-visible" : "overflow-y-auto"}
-`}>
+          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 min-h-0">
               <Panel title="Recent Check-outs" className="lg:col-span-2 h-full min-h-0">
                 {recentCheckouts.length === 0 ? (
