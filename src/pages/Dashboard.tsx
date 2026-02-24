@@ -116,7 +116,7 @@ export default function Dashboard() {
   const loading = roomsSnap.loading || guestsSnap.loading;
   const permissionDenied = roomsSnap.err === "permission-denied" || guestsSnap.err === "permission-denied";
 
-  const mobile = useIsMobile(1500);
+  const mobile = useIsMobile(1024);
 
   useLayoutEffect(() => {
     window.scrollTo(0, 0);
@@ -160,7 +160,7 @@ export default function Dashboard() {
     ${mobile ? "" : "overflow-hidden"}
   `}
     >
-      <div className="mx-auto w-full max-w-screen-xl px-4 md:px-6 py-4 h-full flex flex-col min-h-0 touch-pan-y">
+      <div className="mx-auto w-full max-w-screen-xl px-4 md:px-6 py-4 flex flex-col min-h-0 touch-pan-y">
         <div className="flex flex-col min-h-0 gap-4 flex-1">
 
           <div className="shrink-0">
