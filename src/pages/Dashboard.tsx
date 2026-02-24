@@ -156,8 +156,9 @@ export default function Dashboard() {
     <div
       className={`
     ${mobile ? "min-h-screen overflow-y-auto" : "h-screen overflow-hidden"}
-    overscroll-none bg-gray-50 dark:bg-transparent lg:ml-64 max-w-4xl
+    overscroll-auto bg-gray-50 dark:bg-transparent lg:ml-64 max-w-4xl
     ${mobile ? "" : "overflow-hidden"}
+    touch-pan-y [-webkit-overflow-scrolling:touch]
   `}
     >
       <div className="mx-auto w-full max-w-screen-xl px-4 md:px-6 py-4 flex flex-col min-h-0 touch-pan-y">

@@ -26,6 +26,7 @@ export default function DashboardCard({
     text-center
     w-36 h-28
     md:w-40 md:h-32
+    touch-pan-y
   `;
 
   const enabledStyles = `
@@ -51,7 +52,7 @@ export default function DashboardCard({
     >
       {/* Soft Gradient Tint */}
       <div
-        className={`absolute inset-0 rounded-2xl bg-gradient-to-r ${color} opacity-5`}
+        className={`absolute inset-0 rounded-2xl bg-gradient-to-r ${color} opacity-5 pointer-events-none`}
       />
 
       {/* Icon */}
@@ -72,6 +73,7 @@ export default function DashboardCard({
           absolute inset-0 rounded-2xl
           bg-gradient-to-r opacity-0 hover:opacity-10
           transition-opacity duration-200 bg-slate-800 dark:bg-slate-100
+          pointer-events-none
         " />
       )}
     </div>
@@ -79,5 +81,5 @@ export default function DashboardCard({
 
   if (disabled) return cardContent;
 
-  return <Link to={link}>{cardContent}</Link>;
+  return <Link to={link} className="block touch-pan-y">{cardContent}</Link>;
 }
