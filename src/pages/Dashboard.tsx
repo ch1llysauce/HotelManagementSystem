@@ -160,7 +160,7 @@ export default function Dashboard() {
     ${mobile ? "" : "overflow-hidden"}
   `}
     >
-      <div className="mx-auto w-full max-w-screen-xl px-4 md:px-6 py-4 h-full flex flex-col min-h-0">
+      <div className="mx-auto w-full max-w-screen-xl px-4 md:px-6 py-4 h-full flex flex-col min-h-0 touch-pan-y">
         <div className="flex flex-col min-h-0 gap-4 flex-1">
 
           <div className="shrink-0">
@@ -208,7 +208,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y">
+          <div className="flex-1 min-h-0 overflow-visible touch-pan-y">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 min-h-0">
               <Panel title="Recent Check-outs" className="lg:col-span-2 h-full min-h-0">
                 {recentCheckouts.length === 0 ? (
