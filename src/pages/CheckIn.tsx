@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useLayoutEffect } from "react";
 import "react-phone-input-2/lib/style.css";
 import { db } from "../firebase/firebaseConfig";
 import { recordPayment } from "../utils/payments";
@@ -80,6 +80,40 @@ export default function CheckIn() {
       }
     }
   }, [checkInDate]);
+
+  function useIsMobile(breakpoint: number) {
+    const [isMobile, setIsMobile] = useState(() => window.innerWidth < breakpoint);
+
+    useEffect(() => {
+      const handleResize = () => setIsMobile(window.innerWidth < breakpoint);
+      window.addEventListener("resize", handleResize);
+      return () => window.removeEventListener("resize", handleResize);
+    }, [breakpoint]);
+
+    return isMobile;
+  }
+
+  const mobile = useIsMobile(1500);
+
+  useLayoutEffect(() => {
+    window.scrollTo(0, 0);
+
+    const prevBody = document.body.style.overflow;
+    const prevHtml = document.documentElement.style.overflow;
+
+    if (!mobile) {
+      document.body.style.overflow = "hidden";
+      document.documentElement.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "auto";
+      document.documentElement.style.overflow = "auto";
+    }
+
+    return () => {
+      document.body.style.overflow = prevBody;
+      document.documentElement.style.overflow = prevHtml;
+    };
+  }, [mobile]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -267,172 +301,183 @@ Balance After Deposit: ₱${totalCost - depositAmount}
 
 
   return (
-    <div className="h-full overflow-hidden flex items-start justify-center bg-gray-50 dark:bg-transparent">
-      <div className="w-full max-w-lg h-[calc(100vh-8rem)] bg-white dark:bg-slate-600 rounded-3xl shadow-lg p-6 overflow-hidden">
-        <div className="mb-4 text-center">
-          <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900 dark:text-gray-200">
-            Guest Check-In
-          </h1>
-          <p className="mt-1 text-gray-500 dark:text-gray-400 text-sm md:text-base">
-            Registration of guests, make sure to input all the necessary information.
-          </p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="flex flex-col gap-2">
-          <input
-            type="text"
-            className="border border-gray-300 rounded-lg px-3 py-3 text-sm
-           focus:outline-none focus:ring-2 focus:ring-blue-400 text-white"
-            placeholder="Full Name"
-            value={name}
-            onChange={(e) => {
-              const sanitized = e.target.value.replace(/[^a-zA-Z\s]/g, "");
-              setName(sanitized);
-            }}
-          />
-
-          <small className="text-gray-400 dark:text-gray-200">Include country code for international guests</small>
-          <input
-            type="tel"
-            id="phone"
-            name="phone"
-            placeholder="Phone Number (+xx Format)"
-            value={phone}
-            onChange={(e) => {
-              let value = e.target.value;
-              if (value.startsWith("+")) {
-                value = "+" + value.slice(1, 16).replace(/\D/g, "");
-              } else {
-                value = value.slice(0, 10).replace(/\D/g, "");
-              }
-              setPhone(value);
-            }}
-            className="border border-gray-300 rounded-lg px-3 py-3 text-white text-sm
-           focus:outline-none focus:ring-2 focus:ring-blue-400"
-
-          />
-          <input
-            type="email"
-            className="border border-gray-300 rounded-lg px-3 py-3 text-sm
-           focus:outline-none focus:ring-2 focus:ring-blue-400 text-white"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-
-          <select
-            value={selectedRoomId}
-            onChange={(e) => setSelectedRoomId(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-3 text-white text-sm
-           focus:outline-none focus:ring-2 focus:ring-blue-400">
-            <option value="">Select Available Room</option>
-            {rooms
-              .filter(room => room.status === "Available")
-              .map(room => (
-                <option key={room.id} value={room.id}>
-                  Room {room.number} — {room.type} — ₱{room.price}
-                </option>
-              ))}
-          </select>
-
-
-          <div className="flex gap-4">
-            {/* Check-In Date */}
-            <div className="flex flex-col flex-1">
-              <label
-                htmlFor="checkInDate"
-                className="text-gray-500 dark:text-gray-200 text-sm mb-0.5"
-              >
-                Check-In Date
-              </label>
-              <input
-                id="checkInDate"
-                type="date"
-                min={minCheckInDate}
-                className="text-gray-100 dark:text-gray-100 border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"
-                value={checkInDate}
-                onChange={(e) => setCheckInDate(e.target.value)}
-              />
-            </div>
-
-            {/* Check-Out Date */}
-            <div className="flex flex-col flex-1">
-              <label
-                htmlFor="checkOutDate"
-                className="text-gray-500 dark:text-gray-200 text-sm mb-0.5"
-              >
-                Check-Out Date
-              </label>
-              <input
-                id="checkOutDate"
-                type="date"
-                min={minCheckoutDate}
-                className="text-gray-100 dark:text-gray-100 border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"
-                value={checkOutDate}
-                onChange={(e) => setCheckOutDate(e.target.value)}
-              />
-            </div>
+    <div
+      className={`
+      ${mobile ? "min-h-screen overflow-y-auto" : "h-screen overflow-hidden"}
+      overscroll-none bg-gray-50 dark:bg-transparent lg:ml-64
+      flex items-start justify-center
+    `}
+    >
+      <div className="w-full max-w-lg h-full px-4 md:px-6 py-4">
+        <div className="h-full bg-white dark:bg-slate-600 rounded-3xl shadow-lg p-6 flex flex-col min-h-0">
+          <div className="mb-4 text-center">
+            <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900 dark:text-gray-200">
+              Guest Check-In
+            </h1>
+            <p className="mt-1 text-gray-500 dark:text-gray-400 text-sm md:text-base">
+              Registration of guests, make sure to input all the necessary information.
+            </p>
           </div>
 
-          <input
-            type="number"
-            placeholder="Deposit Amount"
-            value={deposit}
-            min={0}
-            max={totalCost || undefined}
-            onChange={(e) => {
-              const value = Number(e.target.value);
+          <form onSubmit={handleSubmit} className={`
+            flex flex-col gap-2 min-h-0
+            ${mobile ? "overflow-visible" : "overflow-y-auto pr-1"}
+          `}>
+            <input
+              type="text"
+              className="border border-gray-300 rounded-lg px-3 py-3 text-white text-sm
+           focus:outline-none focus:ring-2 focus:ring-blue-400"
+              placeholder="Full Name"
+              value={name}
+              onChange={(e) => {
+                const sanitized = e.target.value.replace(/[^a-zA-Z\s]/g, "");
+                setName(sanitized);
+              }}
+            />
 
-              if (value > totalCost) {
-                setDeposit(String(totalCost));
-                return;
-              }
+            <small className="text-gray-400 dark:text-gray-200">Include country code for international guests</small>
+            <input
+              type="tel"
+              id="phone"
+              name="phone"
+              placeholder="Phone Number (+xx Format)"
+              value={phone}
+              onChange={(e) => {
+                let value = e.target.value;
+                if (value.startsWith("+")) {
+                  value = "+" + value.slice(1, 16).replace(/\D/g, "");
+                } else {
+                  value = value.slice(0, 10).replace(/\D/g, "");
+                }
+                setPhone(value);
+              }}
+              className="border border-gray-300 rounded-lg px-3 py-3 text-white text-sm
+           focus:outline-none focus:ring-2 focus:ring-blue-400"
 
-              setDeposit(e.target.value);
-            }}
-            className={`border border-gray-300 rounded-lg px-3 py-3 text-sm
+            />
+            <input
+              type="email"
+              className="border border-gray-300 rounded-lg px-3 py-3 text-sm
+           focus:outline-none focus:ring-2 focus:ring-blue-400 text-white"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+
+            <select
+              value={selectedRoomId}
+              onChange={(e) => setSelectedRoomId(e.target.value)}
+              className="border border-gray-300 rounded-lg px-3 py-3 text-white text-sm
+           focus:outline-none focus:ring-2 focus:ring-blue-400">
+              <option value="">Select Available Room</option>
+              {rooms
+                .filter(room => room.status === "Available")
+                .map(room => (
+                  <option key={room.id} value={room.id}>
+                    Room {room.number} — {room.type} — ₱{room.price}
+                  </option>
+                ))}
+            </select>
+
+
+            <div className="flex flex-col sm:flex-row gap-1">
+              {/* Check-In Date */}
+              <div className="flex flex-col flex-1">
+                <label
+                  htmlFor="checkInDate"
+                  className="text-gray-500 dark:text-gray-200 text-sm mb-0.5"
+                >
+                  Check-In Date
+                </label>
+                <input
+                  id="checkInDate"
+                  type="date"
+                  min={minCheckInDate}
+                  className="text-gray-100 dark:text-gray-100 border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"
+                  value={checkInDate}
+                  onChange={(e) => setCheckInDate(e.target.value)}
+                />
+              </div>
+
+              {/* Check-Out Date */}
+              <div className="flex flex-col flex-1">
+                <label
+                  htmlFor="checkOutDate"
+                  className="text-gray-500 dark:text-gray-200 text-sm mb-0.5"
+                >
+                  Check-Out Date
+                </label>
+                <input
+                  id="checkOutDate"
+                  type="date"
+                  min={minCheckoutDate}
+                  className="text-gray-100 dark:text-gray-100 border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"
+                  value={checkOutDate}
+                  onChange={(e) => setCheckOutDate(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <input
+              type="number"
+              placeholder="Deposit Amount"
+              value={deposit}
+              min={0}
+              max={totalCost || undefined}
+              onChange={(e) => {
+                const value = Number(e.target.value);
+
+                if (value > totalCost) {
+                  setDeposit(String(totalCost));
+                  return;
+                }
+
+                setDeposit(e.target.value);
+              }}
+              className={`border border-gray-300 rounded-lg px-3 py-3 text-sm
            focus:outline-none focus:ring-2 focus:ring-blue-400 text-white
       ${isDepositTooHigh
-                ? "border-red-500 focus:ring-red-400"
-                : "border-gray-300 focus:ring-blue-400"
-              }`}
-          />
-          {isDepositTooHigh && (
-            <p className="text-sm text-red-600 mt-1">
-              Deposit cannot exceed total cost (₱{totalCost})
-            </p>
-          )}
+                  ? "border-red-500 focus:ring-red-400"
+                  : "border-gray-300 focus:ring-blue-400"
+                }`}
+            />
+            {isDepositTooHigh && (
+              <p className="text-sm text-red-600 mt-1">
+                Deposit cannot exceed total cost (₱{totalCost})
+              </p>
+            )}
 
-          <select
-            value={depositMethod}
-            onChange={(e) => setDepositMethod(e.target.value)}
-           className="border border-gray-300 rounded-lg px-3 py-3 text-white text-sm
+            <select
+              value={depositMethod}
+              onChange={(e) => setDepositMethod(e.target.value)}
+              className="border border-gray-300 rounded-lg px-3 py-3 text-white text-sm
            focus:outline-none focus:ring-2 focus:ring-blue-400"
-          >
-            <option value="card">Card</option>
-            <option value="cash">Cash</option>
-          </select>
+            >
+              <option value="card">Card</option>
+              <option value="cash">Cash</option>
+            </select>
 
-          <p className="text-gray-600 dark:text-gray-200 mt-2">
-            Estimated total: ₱{roomRate * nights} (Deposit: ₱{deposit})
-          </p>
+            <p className="text-gray-600 dark:text-gray-200 mt-2">
+              Estimated total: ₱{roomRate * nights} (Deposit: ₱{deposit})
+            </p>
 
-          <textarea
-            rows={3}
-            className="border border-gray-300 rounded-lg p-3 resize-none text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
-            placeholder="Special Requests / Notes"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-          />
+            <textarea
+              rows={3}
+              className="border border-gray-300 rounded-lg p-3 resize-none text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+              placeholder="Special Requests / Notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+            />
 
-          <button
-            type="submit"
-            disabled={loading || isDepositTooHigh}
-            className="bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-lg transition-all duration-200 disabled:opacity-50"
-          >
-            {loading ? "Checking In..." : "Check-In"}
-          </button>
-        </form>
+            <button
+              type="submit"
+              disabled={loading || isDepositTooHigh}
+              className="bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-lg transition-all duration-200 disabled:opacity-50"
+            >
+              {loading ? "Checking In..." : "Check-In"}
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );

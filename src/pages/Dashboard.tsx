@@ -23,7 +23,7 @@ const isToday = (ts?: Timestamp | null) => {
   return d >= s && d <= e;
 };
 
-function useIsMobile(breakpoint = 768) {
+function useIsMobile(breakpoint: number) {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < breakpoint);
 
   useEffect(() => {
@@ -116,7 +116,7 @@ export default function Dashboard() {
   const loading = roomsSnap.loading || guestsSnap.loading;
   const permissionDenied = roomsSnap.err === "permission-denied" || guestsSnap.err === "permission-denied";
 
-  const mobile = useIsMobile(768);
+  const mobile = useIsMobile(1500);
 
   useLayoutEffect(() => {
     window.scrollTo(0, 0);
