@@ -1,4 +1,4 @@
-import { useLayoutEffect, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { collection, onSnapshot, Timestamp } from "firebase/firestore";
 import { db } from "../firebase/firebaseConfig";
 import { Guest, RoomDocument } from "../types";
@@ -22,18 +22,6 @@ const isToday = (ts?: Timestamp | null) => {
   const d = ts.toDate();
   return d >= s && d <= e;
 };
-
-function useIsMobile(breakpoint: number) {
-  const [isMobile, setIsMobile] = useState(() => window.innerWidth < breakpoint);
-
-  useEffect(() => {
-    const onResize = () => setIsMobile(window.innerWidth < breakpoint);
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, [breakpoint]);
-
-  return isMobile;
-}
 
 function useCollectionSnap<T>(path: string) {
   const [data, setData] = useState<T[]>([]);
@@ -74,7 +62,7 @@ export default function Dashboard() {
     const total = rooms.length;
     const countRoom = (status: string) => rooms.filter((r) => r.status === status).length;
     const cleaning = rooms.filter((r) => r.status === "Cleaning" || r.status === "Housekeeping").length;
-    const occupied = rooms.filter((r) => r.assignedGuestId != null).length;
+    const occupied = rooms.filter((r) => r.status === "Occupied").length;
     const occupancyRate = total ? Math.round((occupied / total) * 100) : 0;
 
     const activeGuests = guests.filter((g) => g.checkedOut === false);
@@ -115,8 +103,6 @@ export default function Dashboard() {
 
   const loading = roomsSnap.loading || guestsSnap.loading;
   const permissionDenied = roomsSnap.err === "permission-denied" || guestsSnap.err === "permission-denied";
-
-  // const mobile = useIsMobile(1024);
 
   useEffect(() => {
     const scroller = document.querySelector("main"); // Layout's scroller

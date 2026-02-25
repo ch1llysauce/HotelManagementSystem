@@ -146,20 +146,30 @@ export default function Guests() {
     });
 
 
-  const handleCheckIn = async (guestId: string) => {
-    try {
-      const ref = doc(db, "guests", guestId);
-      await updateDoc(ref, {
-        checkedIn: true,
-        checkedOut: false,
-        status: "checked-in",
+  const handleCheckIn = async (guest: Guest) => {
+  if (!guest.id) return;
+
+  try {
+    // update guest
+    await updateDoc(doc(db, "guests", guest.id), {
+      checkedIn: true,
+      checkedOut: false,
+      status: "checked-in",
+    });
+
+    if (guest.roomId) {
+      await updateDoc(doc(db, "rooms", guest.roomId), {
+        status: "Occupied",
+        assignedGuestId: guest.id,
       });
-      showToast("Guest checked in");
-    } catch (e) {
-      console.error(e);
-      showToast("Failed to check in");
     }
-  };
+
+    showToast("Guest checked in");
+  } catch (e) {
+    console.error(e);
+    showToast("Failed to check in");
+  }
+};
 
   const handleExport = () => {
     const rows = visibleGuests.map((g) => ({
@@ -542,7 +552,7 @@ export default function Guests() {
           guestName={checkInGuest.name}
           onCancel={() => setCheckInGuest(null)}
           onConfirm={async () => {
-            await handleCheckIn(checkInGuest.id);
+            await handleCheckIn(checkInGuest);
             setCheckInGuest(null);
           }}
         />
