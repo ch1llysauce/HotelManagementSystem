@@ -81,5 +81,5 @@ export default function DashboardCard({
 
   if (disabled) return cardContent;
 
-  return <Link to={link} className="block touch-pan-y">{cardContent}</Link>;
+  return <Link to={link} className="block">{cardContent}</Link>;
 }

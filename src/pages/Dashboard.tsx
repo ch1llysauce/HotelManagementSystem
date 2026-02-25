@@ -116,27 +116,12 @@ export default function Dashboard() {
   const loading = roomsSnap.loading || guestsSnap.loading;
   const permissionDenied = roomsSnap.err === "permission-denied" || guestsSnap.err === "permission-denied";
 
-  const mobile = useIsMobile(1024);
+  // const mobile = useIsMobile(1024);
 
-  useLayoutEffect(() => {
-    window.scrollTo(0, 0);
-
-    const prevBody = document.body.style.overflow;
-    const prevHtml = document.documentElement.style.overflow;
-
-    if (!mobile) {
-      document.body.style.overflow = "hidden";
-      document.documentElement.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "auto";
-      document.documentElement.style.overflow = "auto";
-    }
-
-    return () => {
-      document.body.style.overflow = prevBody;
-      document.documentElement.style.overflow = prevHtml;
-    };
-  }, [mobile]);
+  useEffect(() => {
+    const scroller = document.querySelector("main"); // Layout's scroller
+    scroller?.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+  }, []);
 
 
   useEffect(() => {
@@ -153,14 +138,7 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <div
-      className={`
-    ${mobile ? "min-h-screen overflow-y-auto" : "h-screen overflow-hidden"}
-    overscroll-auto bg-gray-50 dark:bg-transparent lg:ml-64 max-w-4xl
-    ${mobile ? "" : "overflow-hidden"}
-    touch-pan-y [-webkit-overflow-scrolling:touch]
-  `}
-    >
+    <div className="bg-gray-50 dark:bg-transparent lg:ml-64 max-w-4xl">
       <div className="mx-auto w-full max-w-screen-xl px-4 md:px-6 py-4 flex flex-col min-h-0 touch-pan-y">
         <div className="flex flex-col min-h-0 gap-4 flex-1">
 
@@ -209,27 +187,26 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="flex-1 min-h-0 overflow-visible touch-pan-y">
+          <div>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 min-h-0">
-              <Panel title="Recent Check-outs" className="lg:col-span-2 h-full min-h-0">
+              <Panel title="Recent Check-outs" className="lg:col-span-2 h-full min-h-0 flex flex-col">
                 {recentCheckouts.length === 0 ? (
                   <div className="text-sm text-gray-500 dark:text-gray-200">No recent check-outs yet.</div>
                 ) : (
-                  <div className="h-full overscroll-none space-y-2 pr-1">
-                    {recentCheckouts.map((g) => (
-                      <div
-                        key={g.id}
-                        className="flex items-center justify-between rounded-xl border border-gray-200 dark:border-slate-600 px-3 py-2"
-                      >
-                        <div>
-                          <div className="font-semibold text-gray-900 dark:text-white text-sm">{g.name}</div>
-                          <div className="text-xs text-gray-500 dark:text-gray-200">Room {g.roomNumber}</div>
-                        </div>
-                        <div className="text-xs text-gray-600 dark:text-gray-200">
-                          {g.checkedOutAt?.toDate().toLocaleString()}
-                        </div>
+                  <div className="space-y-2 pr-1">                  {recentCheckouts.map((g) => (
+                    <div
+                      key={g.id}
+                      className="flex items-center justify-between rounded-xl border border-gray-200 dark:border-slate-600 px-3 py-2"
+                    >
+                      <div>
+                        <div className="font-semibold text-gray-900 dark:text-white text-sm">{g.name}</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-200">Room {g.roomNumber}</div>
                       </div>
-                    ))}
+                      <div className="text-xs text-gray-600 dark:text-gray-200">
+                        {g.checkedOutAt?.toDate().toLocaleString()}
+                      </div>
+                    </div>
+                  ))}
                   </div>
                 )}
               </Panel>
@@ -271,7 +248,7 @@ function KPI({ label, value, prefix, suffix }: { label: string; value: number; p
 function Panel({ title, children, className = "" }: { title: string; children: React.ReactNode; className?: string }) {
   return (
     <div className={`rounded-2xl bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 p-4 shadow-sm ${className}`}>
-      <div className="font-bold text-gray-900 dark:text-white mb-2">{title}</div>
+      <div className="font-bold text-gray-900 dark:text-white mb-2 shrink-0">{title}</div>
       {children}
     </div>
   );
