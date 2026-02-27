@@ -5,6 +5,8 @@ import { createUserWithEmailAndPassword, updateProfile, signOut } from "firebase
 import { auth } from "../firebase/firebaseConfig";
 import { Eye, EyeOff } from "lucide-react";
 import ConfirmDialog from "../components/LogoutConfirmDialog";
+import { type PasswordCheck, validatePassword } from "../utils/validatePassword";
+import { sendEmailVerification } from "firebase/auth";
 
 export default function Signup() {
     const nav = useNavigate();
@@ -16,22 +18,36 @@ export default function Signup() {
     const [err, setErr] = useState<string | null>(null);
     const [showPass, setShowPass] = useState(false);
     const [success, setSuccess] = useState(false);
+    const [pwChecks, setPwChecks] = useState<PasswordCheck | null>(null);
+    
+
+    const passwordValid =
+        pwChecks ? Object.values(pwChecks).every(Boolean) : false;
 
     async function onSubmit(e: React.FormEvent) {
         e.preventDefault();
         setErr(null);
 
-        if (pass.length < 6) return setErr("Password must be at least 6 characters.");
-        if (pass !== confirm) return setErr("Passwords do not match.");
+        const pw = pass;
+
+        const v = validatePassword(pw);
+        if (!v.ok) {
+            setErr("Please satisfy all password requirements.");
+            return;
+        }
+
+        if (pw !== confirm) return setErr("Passwords do not match.");
 
         try {
             setLoading(true);
-            const cred = await createUserWithEmailAndPassword(auth, email.trim(), pass);
+            const cred = await createUserWithEmailAndPassword(auth, email.trim(), pw);
 
             if (name.trim()) {
                 await updateProfile(cred.user, { displayName: name.trim() });
             }
 
+            await sendEmailVerification(cred.user);
+            await signOut(auth);
             setSuccess(true);
         } catch (e: any) {
             setErr(e?.message ?? "Signup failed.");
@@ -60,6 +76,8 @@ export default function Signup() {
                         {err}
                     </div>
                 )}
+
+
 
                 <form onSubmit={onSubmit} className="mt-5 space-y-4 text-white">
                     <div>
@@ -90,7 +108,12 @@ export default function Signup() {
                         <div className="relative mt-1">
                             <input
                                 value={pass}
-                                onChange={(e) => setPass(e.target.value)}
+                                onChange={(e) => {
+                                    const value = e.target.value;
+                                    setPass(value);
+                                    const result = validatePassword(value);
+                                    setPwChecks(result.checks);
+                                }}
                                 type={showPass ? "text" : "password"}
                                 autoComplete="new-password"
                                 required
@@ -109,6 +132,16 @@ export default function Signup() {
                                 {showPass ? <Eye size={18} /> : <EyeOff size={18} />}
                             </button>
                         </div>
+
+                        {pwChecks && (
+                            <div className="mt-3 text-sm space-y-1">
+                                <Rule ok={pwChecks.length} label="At least 8 characters" />
+                                <Rule ok={pwChecks.upper} label="1 uppercase letter" />
+                                <Rule ok={pwChecks.lower} label="1 lowercase letter" />
+                                <Rule ok={pwChecks.number} label="1 number" />
+                                <Rule ok={pwChecks.special} label="1 special character" />
+                            </div>
+                        )}
                     </div>
 
                     <div>
@@ -126,8 +159,8 @@ export default function Signup() {
                     </div>
 
                     <button
-                        disabled={loading}
-                        className="w-full rounded-xl bg-sky-500 text-white py-2 font-medium hover:bg-sky-600 disabled:opacity-60"
+                        disabled={loading || !passwordValid || pass !== confirm}
+                        className="w-full rounded-xl bg-sky-500 text-white py-2 font-medium hover:bg-sky-600 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {loading ? "Creating..." : "Sign up"}
                     </button>
@@ -144,11 +177,20 @@ export default function Signup() {
             <ConfirmDialog
                 open={success}
                 title="Account created"
-                message="Your account was created successfully. Please log in."
+                message="We sent a verification link to your email. Please verify first, then log in."
                 confirmText="Go to Login"
                 confirmVariant="success"
                 onConfirm={goToLogin}
             />
+        </div>
+    );
+}
+
+function Rule({ ok, label }: { ok: boolean; label: string }) {
+    return (
+        <div className={`flex items-center gap-2 ${ok ? "text-green-600 dark:text-green-400" : "text-gray-500 dark:text-gray-300"}`}>
+            <span className="text-xs">{ok ? "✔" : "•"}</span>
+            <span>{label}</span>
         </div>
     );
 }

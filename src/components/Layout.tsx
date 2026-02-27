@@ -41,6 +41,11 @@ export default function Layout() {
           return;
         }
 
+        if(!user.emailVerified) {
+          nav("/login", { replace: true });
+          return;
+        }
+
         const userRef = doc(db, "users", user.uid);
         const snap = await getDoc(userRef);
 

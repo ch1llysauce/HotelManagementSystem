@@ -33,6 +33,7 @@ function useUserDoc() {
 
     const unsubAuth = onAuthStateChanged(auth, (u) => {
       setUser(u);
+      u?.reload().catch(() => {});
       setUserDoc(null);
       setLoading(true);
       didUpdateLastLoginRef.current = false;
@@ -102,9 +103,13 @@ function useUserDoc() {
 }
 
 export function RequireAuth({ children }: { children: React.ReactNode }) {
-  const { loading, user } = useUserDoc();
+  const { loading, user, userDoc } = useUserDoc();
   if (loading) return <div className="p-6">Loading…</div>;
   if (!user) return <Navigate to="/login" replace />;
+  if(!userDoc) return <div className="p-6">Could not load your account.</div>;
+
+  if(!user.emailVerified) return <Navigate to="/pending" replace />;
+  
   return <>{children}</>;
 }
 
@@ -113,6 +118,7 @@ export function RequireActive({ children }: { children: React.ReactNode }) {
   if (loading) return <div className="p-6">Loading…</div>;
   if (!user) return <Navigate to="/login" replace />;
   if (!userDoc) return <div className="p-6">Could not load your account.</div>;
+  if(!user.emailVerified) return <Navigate to="/pending" replace />;
   if (userDoc.status !== "active") return <Navigate to="/pending" replace />;
   return <>{children}</>;
 }
@@ -128,6 +134,8 @@ export function RequireRole({
   if (loading) return <div className="p-6">Loading…</div>;
   if (!user) return <Navigate to="/login" replace />;
   if (!userDoc) return <div className="p-6">Could not load your account.</div>;
+
+  if(!user.emailVerified) return <Navigate to="/pending" replace />;
   if (userDoc.status !== "active") return <Navigate to="/pending" replace />;
 
   if (role === "admin" && userDoc.role !== "admin") return <Navigate to="/" replace />;
