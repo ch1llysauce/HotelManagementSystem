@@ -11,6 +11,7 @@ import EditGuestModal from "../components/EditGuestModal";
 import CheckInConfirmModal from "../components/CheckInConfirmModal";
 import CheckoutModal from "../components/CheckOutModal";
 import DeleteConfirmModal from "../components/DeleteConfirmModal";
+import { requireRecentPasswordAuth } from "../utils/security";
 
 function guestToFirestoreUpdate(g: Guest) {
   return {
@@ -45,6 +46,73 @@ export default function Guests() {
   const exportRef = useRef<HTMLDivElement | null>(null);
   const navigate = useNavigate();
   type UIStatus = "reserved" | "checked-in" | "due-checkin" | "overdue-checkin" | "due-checkout" | "overdue" | "all";
+
+  const [pwOpen, setPwOpen] = useState(false);
+  const [pw, setPw] = useState("");
+  const [pwError, setPwError] = useState<string | null>(null);
+  const [pwAction, setPwAction] = useState<null | "delete">(null);
+  const [resolver, setResolver] = useState<((v: string) => void) | null>(null);
+  const [rejecter, setRejecter] = useState<((e?: any) => void) | null>(null);
+
+  function askPassword(): Promise<string> {
+    setPw("");
+    setPwError(null);
+    setPwOpen(true);
+
+    return new Promise((resolve, reject) => {
+      setResolver(() => resolve);
+      setRejecter(() => reject);
+    });
+  }
+
+  function closePw() {
+    setPwOpen(false);
+    setResolver(null);
+    setRejecter(null);
+  }
+
+  function cancelPw() {
+    rejecter?.(new Error("cancelled"));
+    closePw();
+  }
+
+  async function confirmPw() {
+  if (!pw.trim()) {
+    showToast("Password is required.");
+    return;
+  }
+
+  try {
+    await requireRecentPasswordAuth(() => Promise.resolve(pw));
+
+    if (pwAction === "delete") {
+      if (!deleteGuestId) return;
+
+      await deleteDoc(doc(db, "guests", deleteGuestId));
+      setDeleteGuestId(null);
+      showToast("Guest deleted");
+    }
+
+    setPwAction(null);
+    closePw();
+  } catch (e: any) {
+    console.log("Auth error:", e);
+
+    if (e?.code === "auth/wrong-password" || e?.code === "auth/invalid-credential") {
+      showToast("Incorrect password.");
+      setPw(""); 
+      return; 
+    }
+
+    if (e?.message === "cancelled") {
+      setPwAction(null);
+      closePw();
+      return;
+    }
+
+    showToast("Authentication failed.");
+  }
+}
 
   const parseYMD = (s?: string) => {
     if (!s) return null;
@@ -147,29 +215,29 @@ export default function Guests() {
 
 
   const handleCheckIn = async (guest: Guest) => {
-  if (!guest.id) return;
+    if (!guest.id) return;
 
-  try {
-    // update guest
-    await updateDoc(doc(db, "guests", guest.id), {
-      checkedIn: true,
-      checkedOut: false,
-      status: "checked-in",
-    });
-
-    if (guest.roomId) {
-      await updateDoc(doc(db, "rooms", guest.roomId), {
-        status: "Occupied",
-        assignedGuestId: guest.id,
+    try {
+      // update guest
+      await updateDoc(doc(db, "guests", guest.id), {
+        checkedIn: true,
+        checkedOut: false,
+        status: "checked-in",
       });
-    }
 
-    showToast("Guest checked in");
-  } catch (e) {
-    console.error(e);
-    showToast("Failed to check in");
-  }
-};
+      if (guest.roomId) {
+        await updateDoc(doc(db, "rooms", guest.roomId), {
+          status: "Occupied",
+          assignedGuestId: guest.id,
+        });
+      }
+
+      showToast("Guest checked in");
+    } catch (e) {
+      console.error(e);
+      showToast("Failed to check in");
+    }
+  };
 
   const handleExport = () => {
     const rows = visibleGuests.map((g) => ({
@@ -320,14 +388,6 @@ export default function Guests() {
     await updateDoc(ref, guestToFirestoreUpdate(updatedGuest));
     setEditGuest(null);
     showToast("Guest updated");
-  };
-
-  // Handle delete confirm
-  const confirmDelete = async () => {
-    if (!deleteGuestId) return;
-    await deleteDoc(doc(db, "guests", deleteGuestId));
-    setDeleteGuestId(null);
-    showToast("Guest deleted");
   };
 
   const canCheckIn = (g: Guest) => !g.checkedIn && !g.checkedOut;
@@ -569,8 +629,52 @@ export default function Guests() {
       {deleteGuestId && (
         <DeleteConfirmModal
           onCancel={() => setDeleteGuestId(null)}
-          onConfirm={confirmDelete}
+          onConfirm={() => {
+    setPwAction("delete");
+    askPassword(); 
+  }}
         />
+      )}
+
+      {pwOpen && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-900 p-6 rounded-2xl w-full max-w-sm shadow-xl">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Confirm for security
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400 mt-2 text-sm">
+              Please re-enter your password to continue.
+            </p>
+
+            <input
+              type="password"
+              value={pw}
+              onChange={(e) => setPw(e.target.value)}
+              className="mt-4 w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-800"
+              placeholder="Password"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === "Enter") confirmPw();
+                if (e.key === "Escape") cancelPw();
+              }}
+            />
+
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={cancelPw}
+                className="px-4 py-2 rounded-lg bg-gray-300 dark:bg-gray-700"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmPw}
+                className="px-4 py-2 rounded-lg bg-blue-600 text-white"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
