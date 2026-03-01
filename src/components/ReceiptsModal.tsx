@@ -93,7 +93,7 @@ export default function ReceiptModal({ guest, onClose }: ReceiptModalProps) {
 
     try {
       const res = await fetch(
-        "https://asia-southeast1-hotelmanagement-e654a.cloudfunctions.net/sendReceipt",
+        "https://sendreceipt-6ixp46nnya-as.a.run.app",       
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -105,7 +105,7 @@ export default function ReceiptModal({ guest, onClose }: ReceiptModalProps) {
         }
       );
 
-      const text = await res.text(); // ✅ read raw response
+      const text = await res.text();
       console.log("sendReceipt status:", res.status);
       console.log("sendReceipt response:", text);
 

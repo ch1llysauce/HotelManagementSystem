@@ -308,7 +308,7 @@ Balance After Deposit: ₱${totalCost - depositAmount}
       <div className="w-full max-w-lg h-full bg-white dark:bg-slate-600 rounded-3xl shadow-lg p-6 overflow-hidden">
         <div className="mb-4 text-center">
           <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900 dark:text-gray-200">
-            Guest Check-In
+            Guest Check-In (Reservation)
           </h1>
           <p className="mt-1 text-gray-500 dark:text-gray-400 text-sm md:text-base">
             Registration of guests, make sure to input all the necessary information.

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { signOut } from "firebase/auth";
 import { auth } from "../firebase/firebaseConfig";
 import { useNavigate } from "react-router-dom";
@@ -19,6 +19,20 @@ interface SidebarProps {
 export default function Sidebar({ visible, isMobile, onItemClick, onClose, role, userName }: SidebarProps) {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const nav = useNavigate();
+
+  const [darkMode, setDarkMode] = useState(() => {
+    const saved = localStorage.getItem("theme");
+    if (saved === "dark") return true;
+    if (saved === "light") return false;
+    return window.matchMedia?.("(prefers-color-scheme: dark)")?.matches ?? false;
+  });
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (darkMode) root.classList.add("dark");
+    else root.classList.remove("dark");
+    localStorage.setItem("theme", darkMode ? "dark" : "light");
+  }, [darkMode]);
 
   async function handleLogout() {
     setShowLogoutConfirm(false);
@@ -68,19 +82,19 @@ export default function Sidebar({ visible, isMobile, onItemClick, onClose, role,
 
         <nav className="space-y-2">
           {canAccess(role, "dashboard") && (
-            <SidebarItem label="Dashboard" to="/"  onClick={isMobile ? onItemClick : undefined}/>
+            <SidebarItem label="Dashboard" to="/" onClick={isMobile ? onItemClick : undefined} />
           )}
 
           {canAccess(role, "checkin") && (
-            <SidebarItem label="Check In" to="/checkin" onClick={isMobile ? onItemClick : undefined}/>
+            <SidebarItem label="Check In (Reservation)" to="/checkin" onClick={isMobile ? onItemClick : undefined} />
           )}
 
           {canAccess(role, "guests") && (
-            <SidebarItem label="Guests" to="/guests"  onClick={isMobile ? onItemClick : undefined}/>
+            <SidebarItem label="Guests" to="/guests" onClick={isMobile ? onItemClick : undefined} />
           )}
 
           {canAccess(role, "rooms") && (
-            <SidebarItem label="Rooms" to="/rooms"  onClick={isMobile ? onItemClick : undefined}/>
+            <SidebarItem label="Rooms" to="/rooms" onClick={isMobile ? onItemClick : undefined} />
           )}
 
           {canAccess(role, "archivedGuests") && (
@@ -88,20 +102,33 @@ export default function Sidebar({ visible, isMobile, onItemClick, onClose, role,
           )}
 
           {canAccess(role, "housekeeping") && (
-            <SidebarItem label="Housekeeping" to="/housekeeping"  onClick={isMobile ? onItemClick : undefined}/>
+            <SidebarItem label="Housekeeping" to="/housekeeping" onClick={isMobile ? onItemClick : undefined} />
           )}
 
           {canAccess(role, "settings") && (
-            <SidebarItem label="Settings" to="/settings"  onClick={isMobile ? onItemClick : undefined}/>
+            <SidebarItem label="Settings" to="/settings" onClick={isMobile ? onItemClick : undefined} />
           )}
         </nav>
 
         <button
+          type="button"
+          onClick={() => setDarkMode((v) => !v)}
+          className="
+    mt-16 w-full py-2 rounded-xl font-semibold
+    bg-white text-gray-900 hover:bg-gray-100
+    dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700
+    transition
+  "
+        >
+          {darkMode ? "Light Mode" : "Dark Mode"}
+        </button>
+
+        <button
           onClick={() => setShowLogoutConfirm(true)}
           className="
-          mt-8 w-full py-2 rounded-xl font-semibold
-          bg-gray-900 text-white hover:bg-gray-800
-          dark:bg-gray-800 dark:hover:bg-gray-700
+          mt-4 w-full py-2 rounded-xl font-semibold
+          bg-red-800 text-white hover:bg-red-600
+        
           transition
         "
         >

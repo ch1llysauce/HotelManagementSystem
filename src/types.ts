@@ -1,6 +1,6 @@
 import { Timestamp } from "firebase/firestore";
 export type RoomStatus = "Available" | "Reserved" | "Occupied" | "Cleaning" | "Housekeeping";
-export type GuestStatus = "reserved" | "checked-in"  | "due-to-check-in" | "due-to-check-out"  | "overdue-check-out" | "checked-out";
+export type GuestStatus = "reserved" | "checked-in" | "due-to-check-in" | "due-to-check-out" | "overdue-check-out" | "checked-out";
 
 export interface Room {
   number: number;
@@ -37,6 +37,14 @@ export interface Guest {
   expectedCheckOut?: Timestamp;
   overdueSince?: Timestamp;
   checkedOutAt?: Timestamp;
+
+  checkInEmailSent?: boolean;
+  checkOutEmailSent?: boolean;
+  checkInEmailSentAt?: Timestamp;
+  checkOutEmailSentAt?: Timestamp;
+
+  notes?: string;
+  timestamp?: any; 
 }
 
 export interface ArchivedGuest {
@@ -44,6 +52,7 @@ export interface ArchivedGuest {
   name: string;
   email: string;
   phone: string;
+  notes?: string;
   roomId: string;
   roomNumber: number;
 
@@ -56,6 +65,7 @@ export interface ArchivedGuest {
 
   archivedAt: Timestamp;
   checkedOutAt?: Timestamp;
+  timestamp?: any;
 }
 
 export interface CheckOut {

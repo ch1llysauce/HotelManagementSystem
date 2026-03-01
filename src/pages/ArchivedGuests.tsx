@@ -32,6 +32,7 @@ function sortRows<T>(rows: T[], key: keyof T, dir: SortDir) {
       : String(B).localeCompare(String(A));
   });
 }
+
 export default function ArchivedGuests() {
   const [guests, setGuests] = useState<ArchivedGuest[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -41,6 +42,9 @@ export default function ArchivedGuests() {
 
   const [sortKey, setSortKey] = useState<keyof ArchivedGuest>("archivedAt");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
+
+  const PAGE_SIZE = 10;
+  const [page, setPage] = useState(1);
 
   const formatDate = (ts?: Timestamp | string) => {
     if (!ts) return "-";
@@ -88,15 +92,55 @@ export default function ArchivedGuests() {
     return sortRows(filteredGuests, sortKey, sortDir);
   }, [filteredGuests, sortKey, sortDir]);
 
+  const totalPages = Math.max(1, Math.ceil(sortedGuests.length / PAGE_SIZE));
+
+  const pageGuests = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE;
+    return sortedGuests.slice(start, start + PAGE_SIZE);
+  }, [sortedGuests, page]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, startDate, endDate, sortKey, sortDir]);
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+    if (page < 1) setPage(1);
+  }, [page, totalPages]);
+
+
+  function onHeaderSort(key: keyof ArchivedGuest) {
+    if (sortKey === key) {
+      setSortDir(prev => (prev === "desc" ? "asc" : "desc"));
+      return;
+    }
+
+    setSortKey(key);
+
+    const isDate =
+      key === "name" ||
+      key === "roomNumber" ||
+      key === "checkInDate" ||
+      key === "checkOutDate" ||
+      key === "archivedAt";
+
+    setSortDir(isDate ? "asc" : "desc");
+  }
+
+  function SortArrow({ k }: { k: keyof ArchivedGuest }) {
+    if (sortKey !== k) return null;
+    return <span className="ml-1">{sortDir === "asc" ? "▲" : "▼"}</span>;
+  }
+
   return (
-    <div className="p-8">
-      <h1 className="text-3xl font-bold text-black dark:text-white mb-6">Archived Guests History</h1>
+    <div className="p-4">
+      <h1 className="text-2xl font-bold text-black dark:text-white mb-6">Archived Guests History</h1>
 
       {/* Filters */}
       <div className="w-full max-w-5xl mx-auto mb-6">
-        <div className="flex flex-col md:flex-row gap-4">
+        <div className="flex flex-col md:flex-row gap-4 justify-center">
 
-          <div className="flex flex-col flex-1">
+          <div className="flex flex-col">
             <label className="text-sm text-gray-600 dark:text-gray-300 mb-1">
               Search
             </label>
@@ -132,25 +176,7 @@ export default function ArchivedGuests() {
               onChange={e => setEndDate(e.target.value)}
             />
           </div>
-        </div>
 
-        <div className="mt-4 flex justify-center flex-col md:flex-row gap-4">
-          <div className="flex flex-col w-full md:w-56">
-            <label className="text-sm text-gray-600 dark:text-gray-300 mb-1">
-              Sort by
-            </label>
-            <select
-              className="border rounded-lg p-3 w-full text-black dark:text-gray-100 bg-white dark:bg-gray-800"
-              value={String(sortKey)}
-              onChange={e => setSortKey(e.target.value as keyof ArchivedGuest)}
-            >
-              <option value="name">Name</option>
-              <option value="roomNumber">Room</option>
-              <option value="checkInDate">Check-In</option>
-              <option value="checkOutDate">Check-Out</option>
-              <option value="archivedAt">Archived At</option>
-            </select>
-          </div>
 
           <div className="flex flex-col w-full md:w-40">
             <label className="text-sm text-gray-600 dark:text-gray-300 mb-1">
@@ -173,11 +199,56 @@ export default function ArchivedGuests() {
         <table className="min-w-full table-auto">
           <thead className="bg-gray-600 dark:bg-gray-400 text-white dark:text-gray-700">
             <tr>
-              <th className="px-4 py-2 text-left">Name</th>
-              <th className="px-4 py-2 text-left">Room</th>
-              <th className="px-4 py-2 text-left">Check-In</th>
-              <th className="px-4 py-2 text-left">Check-Out</th>
-              <th className="px-4 py-2 text-left">Archived At</th>
+              <th
+                className="px-4 py-2 text-left cursor-pointer select-none"
+                onClick={() => onHeaderSort("name")}
+              >
+                <span className="flex items-center">
+                  Name
+                  <SortArrow k="name" />
+                </span>
+              </th>
+
+              <th
+                className="px-4 py-2 text-left cursor-pointer select-none"
+                onClick={() => onHeaderSort("roomNumber")}
+              >
+                <span className="flex items-center">
+                  Room
+                  <SortArrow k="roomNumber" />
+                </span>
+              </th>
+
+              <th
+                className="px-4 py-2 text-left cursor-pointer select-none"
+                onClick={() => onHeaderSort("checkInDate")}
+              >
+                <span className="flex items-center">
+                  Check-In
+                  <SortArrow k="checkInDate" />
+                </span>
+              </th>
+
+              <th
+                className="px-4 py-2 text-left cursor-pointer select-none"
+                onClick={() => onHeaderSort("checkOutDate")}
+              >
+                <span className="flex items-center">
+                  Check-Out
+                  <SortArrow k="checkOutDate" />
+                </span>
+              </th>
+
+              <th
+                className="px-4 py-2 text-left cursor-pointer select-none"
+                onClick={() => onHeaderSort("archivedAt")}
+              >
+                <span className="flex items-center">
+                  Archived At
+                  <SortArrow k="archivedAt" />
+                </span>
+              </th>
+
               <th className="px-4 py-2 text-left">Actions</th>
             </tr>
           </thead>
@@ -189,7 +260,7 @@ export default function ArchivedGuests() {
                 </td>
               </tr>
             )}
-            {sortedGuests.map(guest => (
+            {pageGuests.map(guest => (
               <tr key={guest.id} className="border-b bg-gray-300 hover:bg-gray-400 dark:bg-gray-500 dark:hover:bg-gray-600">
                 <td className="px-4 py-2 text-black dark:text-gray-100">{guest.name}</td>
                 <td className="px-4 py-2 text-black dark:text-gray-100">{guest.roomNumber}</td>
@@ -211,6 +282,46 @@ export default function ArchivedGuests() {
           </tbody>
         </table>
       </div>
+
+      {/* Pagination */}
+      {sortedGuests.length > 0 && (
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+          <button
+            className="px-3 py-1 rounded-lg border bg-gray-300 dark:bg-gray-800 text-black dark:text-gray-100 disabled:opacity-50"
+            disabled={page === 1}
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+          >
+            Prev
+          </button>
+
+          {/* Part buttons */}
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+            <button
+              key={p}
+              className={`px-3 py-1 rounded-lg border ${p === page
+                ? "bg-blue-600 text-white"
+                : "bg-gray-300 dark:bg-gray-800 text-black dark:text-gray-100"
+                }`}
+              onClick={() => setPage(p)}
+            >
+              Part {p}
+            </button>
+          ))}
+
+          <button
+            className="px-3 py-1 rounded-lg border bg-gray-300 dark:bg-gray-800 text-black dark:text-gray-100 disabled:opacity-50"
+            disabled={page === totalPages}
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+          >
+            Next
+          </button>
+
+          <div className="w-full text-center text-sm text-gray-600 dark:text-gray-300 mt-2">
+            Part {page} / {totalPages} • Showing {(page - 1) * PAGE_SIZE + 1}-
+            {Math.min(page * PAGE_SIZE, sortedGuests.length)} of {sortedGuests.length}
+          </div>
+        </div>
+      )}
 
       {/* Receipt Modal */}
       {selectedGuest && (

@@ -1,5 +1,5 @@
 // pages/Guests.tsx
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { db } from "../firebase/firebaseConfig";
 import { collection, onSnapshot, doc, updateDoc, deleteDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
@@ -54,6 +54,12 @@ export default function Guests() {
   const [resolver, setResolver] = useState<((v: string) => void) | null>(null);
   const [rejecter, setRejecter] = useState<((e?: any) => void) | null>(null);
 
+  type TableSortKey = "name" | "roomNumber" | "status" | "checkInDate" | "checkOutDate" | "email" | "phone";
+  type TableSortDir = "asc" | "desc";
+
+  const [tableSortKey, setTableSortKey] = useState<TableSortKey>("checkOutDate");
+  const [tableSortDir, setTableSortDir] = useState<TableSortDir>("asc");
+
   function askPassword(): Promise<string> {
     setPw("");
     setPwError(null);
@@ -77,42 +83,42 @@ export default function Guests() {
   }
 
   async function confirmPw() {
-  if (!pw.trim()) {
-    showToast("Password is required.");
-    return;
-  }
-
-  try {
-    await requireRecentPasswordAuth(() => Promise.resolve(pw));
-
-    if (pwAction === "delete") {
-      if (!deleteGuestId) return;
-
-      await deleteDoc(doc(db, "guests", deleteGuestId));
-      setDeleteGuestId(null);
-      showToast("Guest deleted");
-    }
-
-    setPwAction(null);
-    closePw();
-  } catch (e: any) {
-    console.log("Auth error:", e);
-
-    if (e?.code === "auth/wrong-password" || e?.code === "auth/invalid-credential") {
-      showToast("Incorrect password.");
-      setPw(""); 
-      return; 
-    }
-
-    if (e?.message === "cancelled") {
-      setPwAction(null);
-      closePw();
+    if (!pw.trim()) {
+      showToast("Password is required.");
       return;
     }
 
-    showToast("Authentication failed.");
+    try {
+      await requireRecentPasswordAuth(() => Promise.resolve(pw));
+
+      if (pwAction === "delete") {
+        if (!deleteGuestId) return;
+
+        await deleteDoc(doc(db, "guests", deleteGuestId));
+        setDeleteGuestId(null);
+        showToast("Guest deleted");
+      }
+
+      setPwAction(null);
+      closePw();
+    } catch (e: any) {
+      console.log("Auth error:", e);
+
+      if (e?.code === "auth/wrong-password" || e?.code === "auth/invalid-credential") {
+        showToast("Incorrect password.");
+        setPw("");
+        return;
+      }
+
+      if (e?.message === "cancelled") {
+        setPwAction(null);
+        closePw();
+        return;
+      }
+
+      showToast("Authentication failed.");
+    }
   }
-}
 
   const parseYMD = (s?: string) => {
     if (!s) return null;
@@ -401,6 +407,58 @@ export default function Guests() {
     return "none";
   };
 
+  function onTableHeaderSort(key: TableSortKey) {
+    if (tableSortKey === key) {
+      setTableSortDir((d) => (d === "asc" ? "desc" : "asc"));
+      return;
+    }
+
+    setTableSortKey(key);
+
+    const isDate = key === "checkInDate" || key === "checkOutDate";
+    const isRoom = key === "roomNumber";
+
+    // sensible default when switching columns
+    setTableSortDir(isDate ? "asc" : isRoom ? "asc" : "asc");
+  }
+
+  function SortArrow({ k }: { k: TableSortKey }) {
+    if (tableSortKey !== k) return null;
+    return <span className="ml-1">{tableSortDir === "asc" ? "▲" : "▼"}</span>;
+  }
+
+  const tableGuests = useMemo(() => {
+  const dir = tableSortDir === "asc" ? 1 : -1;
+
+  const cmp = (a: any, b: any) => {
+    if (a == null && b == null) return 0;
+    if (a == null) return 1;
+    if (b == null) return -1;
+    return String(a).localeCompare(String(b));
+  };
+
+  return [...visibleGuests].sort((a, b) => {
+    switch (tableSortKey) {
+      case "name":
+        return dir * cmp(a.name, b.name);
+      case "email":
+        return dir * cmp(a.email, b.email);
+      case "phone":
+        return dir * cmp(a.phone, b.phone);
+      case "roomNumber":
+        return dir * (Number(a.roomNumber ?? 0) - Number(b.roomNumber ?? 0));
+      case "status":
+        return dir * cmp(getUIStatus(a), getUIStatus(b));
+      case "checkInDate":
+        return dir * (toTime(a.checkInDate) - toTime(b.checkInDate));
+      case "checkOutDate":
+        return dir * (toTime(a.checkOutDate) - toTime(b.checkOutDate));
+      default:
+        return 0;
+    }
+  });
+}, [visibleGuests, tableSortKey, tableSortDir]);
+
   return (
     <div className="p-10">
       <div className="mb-12 text-center max-w-3xl mx-auto">
@@ -494,6 +552,8 @@ export default function Guests() {
           </button>
         </div>
       </div>
+
+
       {/* Guest Cards and Table */}
       {viewMode === "cards" ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
@@ -514,19 +574,75 @@ export default function Guests() {
             <table className="min-w-full text-sm">
               <thead className="bg-gray-600 dark:bg-gray-400 text-white dark:text-gray-700">
                 <tr>
-                  <th className="p-3 text-center">Name</th>
-                  <th className="p-3 text-center">Room</th>
-                  <th className="p-3 text-center">Status</th>
-                  <th className="p-3 text-center">Check-in</th>
-                  <th className="p-3 text-center">Check-out</th>
-                  <th className="p-3 text-center">Email</th>
-                  <th className="p-3 text-center">Phone</th>
+                  <th
+                    className="p-3 text-center cursor-pointer select-none"
+                    onClick={() => onTableHeaderSort("name")}
+                  >
+                    <span className="inline-flex items-center justify-center">
+                      Name <SortArrow k="name" />
+                    </span>
+                  </th>
+
+                  <th
+                    className="p-3 text-center cursor-pointer select-none"
+                    onClick={() => onTableHeaderSort("roomNumber")}
+                  >
+                    <span className="inline-flex items-center justify-center">
+                      Room <SortArrow k="roomNumber" />
+                    </span>
+                  </th>
+
+                  <th
+                    className="p-3 text-center cursor-pointer select-none"
+                    onClick={() => onTableHeaderSort("status")}
+                  >
+                    <span className="inline-flex items-center justify-center">
+                      Status <SortArrow k="status" />
+                    </span>
+                  </th>
+
+                  <th
+                    className="p-3 text-center cursor-pointer select-none"
+                    onClick={() => onTableHeaderSort("checkInDate")}
+                  >
+                    <span className="inline-flex items-center justify-center">
+                      Check-in <SortArrow k="checkInDate" />
+                    </span>
+                  </th>
+
+                  <th
+                    className="p-3 text-center cursor-pointer select-none"
+                    onClick={() => onTableHeaderSort("checkOutDate")}
+                  >
+                    <span className="inline-flex items-center justify-center">
+                      Check-out <SortArrow k="checkOutDate" />
+                    </span>
+                  </th>
+
+                  <th
+                    className="p-3 text-center cursor-pointer select-none"
+                    onClick={() => onTableHeaderSort("email")}
+                  >
+                    <span className="inline-flex items-center justify-center">
+                      Email <SortArrow k="email" />
+                    </span>
+                  </th>
+
+                  <th
+                    className="p-3 text-center cursor-pointer select-none"
+                    onClick={() => onTableHeaderSort("phone")}
+                  >
+                    <span className="inline-flex items-center justify-center">
+                      Phone <SortArrow k="phone" />
+                    </span>
+                  </th>
+
                   <th className="p-3 text-center">Actions</th>
                 </tr>
               </thead>
 
               <tbody>
-                {visibleGuests.map((g) => (
+                {tableGuests.map((g) => (
                   <tr key={g.id} className="border-b bg-gray-300 hover:bg-gray-400 dark:bg-gray-500 dark:hover:bg-gray-600">
                     <td className="p-3 font-medium text-gray-900">{g.name}</td>
                     <td className="p-3 text-black">{g.roomNumber}</td>
@@ -630,9 +746,9 @@ export default function Guests() {
         <DeleteConfirmModal
           onCancel={() => setDeleteGuestId(null)}
           onConfirm={() => {
-    setPwAction("delete");
-    askPassword(); 
-  }}
+            setPwAction("delete");
+            askPassword();
+          }}
         />
       )}
 

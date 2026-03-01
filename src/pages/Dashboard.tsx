@@ -131,7 +131,7 @@ export default function Dashboard() {
           <div className="shrink-0">
             <div className="mb-3 text-center max-w-3xl mx-auto">
               <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 dark:text-white">
-                Hotel Management Dashboard
+                Chill's Hotel Management Dashboard
               </h1>
               <p className="mt-1 text-gray-500 text-sm md:text-base">
                 Manage check-ins, check-outs, rooms, and guests efficiently.

@@ -4,14 +4,154 @@ import { initializeApp } from "firebase-admin/app";
 import { onSchedule } from "firebase-functions/scheduler";
 import { getFirestore, Timestamp as AdminTimestamp } from "firebase-admin/firestore";
 
-initializeApp();
+
+import * as admin from "firebase-admin";
+import { onDocumentUpdated } from "firebase-functions/v2/firestore";
+import sgMail from "@sendgrid/mail";
+
+admin.initializeApp();
 
 // Firebase secrets
-const CLIENT_ID = defineSecret("GMAIL_CLIENT_ID");
-const CLIENT_SECRET = defineSecret("GMAIL_CLIENT_SECRET");
-const REFRESH_TOKEN = defineSecret("GMAIL_REFRESH_TOKEN");
-const SENDER_EMAIL = "chillrigel05@gmail.com";
 const firestore = getFirestore();
+
+function formatAnyDate(v: any): string {
+  if (!v) return "";
+
+  if (typeof v?.toDate === "function") {
+    return v.toDate().toISOString().slice(0, 10); // YYYY-MM-DD
+  }
+
+  // JS Date
+  if (v instanceof Date) {
+    return v.toISOString().slice(0, 10);
+  }
+
+  // already a string
+  if (typeof v === "string") {
+    return v;
+  }
+
+  return String(v);
+}
+
+export const sendCheckInEmail = onDocumentUpdated(
+  {
+    document: "guests/{guestId}",
+    region: "asia-southeast1",
+    secrets: ["SENDGRID_API_KEY"],
+  },
+  async (event) => {
+    const before = event.data?.before.data() as any;
+    const after = event.data?.after.data() as any;
+    if (!before || !after) return;
+
+    const wasCheckedIn = !!before.checkedIn;
+    const isCheckedIn = !!after.checkedIn;
+
+    if (wasCheckedIn || !isCheckedIn) return;
+    if (after.checkInEmailSent === true) return;
+
+    const email = after.email;
+    if (!email) return;
+
+    const apiKey = process.env.SENDGRID_API_KEY;
+    if (!apiKey) return;
+
+    sgMail.setApiKey(apiKey);
+
+    const name = after.name ?? "Guest";
+    const roomNumber = after.roomNumber ?? "TBA";
+    const checkInDate = formatAnyDate(after.checkInDate);
+    const checkOutDate = formatAnyDate(after.checkOutDate);
+
+    await sgMail.send({
+      to: email,
+      from: "chillrigel05@gmail.com",
+      subject: `Check-in confirmed! Room ${roomNumber}`,
+      text: `Hi ${name}, your check-in is confirmed. Room: ${roomNumber}. ${checkInDate ? `Check-in: ${checkInDate}.` : ""} ${checkOutDate ? `Check-out: ${checkOutDate}.` : ""}`,
+      html: `
+        <div style="font-family: Arial, sans-serif;">
+          <h2>Welcome, ${name}</h2>
+          <p>Your check-in is confirmed.</p>
+          <ul>
+            <li><b>Room:</b> ${roomNumber}</li>
+            ${checkInDate ? `<li><b>Check-in:</b> ${checkInDate}</li>` : ""}
+            ${checkOutDate ? `<li><b>Check-out:</b> ${checkOutDate}</li>` : ""}
+          </ul>
+          <p>If you need anything, reply to this email.</p>
+        </div>
+      `,
+    });
+
+    // Mark sent (prevents duplicates even if function retries)
+    await event.data!.after.ref.update({
+      checkInEmailSent: true,
+      checkInEmailSentAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+  }
+);
+
+export const sendCheckOutEmail = onDocumentUpdated(
+  {
+    document: "guests/{guestId}",
+    region: "asia-southeast1",
+    secrets: ["SENDGRID_API_KEY"],
+  },
+  async (event) => {
+    const before = event.data?.before.data() as any;
+    const after = event.data?.after.data() as any;
+    if (!before || !after) return;
+
+    // Transition: checkedOut false -> true
+    const wasCheckedOut = !!before.checkedOut;
+    const isCheckedOut = !!after.checkedOut;
+
+    if (wasCheckedOut || !isCheckedOut) return;
+    if (after.checkOutEmailSent === true) return;
+
+    const email = after.email;
+    if (!email) return;
+
+    const apiKey = process.env.SENDGRID_API_KEY;
+    if (!apiKey) return;
+
+    sgMail.setApiKey(apiKey);
+
+    const name = after.name ?? "Guest";
+    const roomNumber = after.roomNumber ?? "TBA";
+    const checkOutDate = after.checkOutDate ?? "";
+
+    const extras = Number(after.extras ?? 0);
+    const deposit = Number(after.deposit ?? 0);
+    const balance = Number(after.balance ?? 0);
+
+    await sgMail.send({
+      to: email,
+      from: "chillrigel05@gmail.com",
+      subject: `Checked out. Thank you, ${name}!`,
+      text: `Thanks for staying with us. Room: ${roomNumber}. ${checkOutDate ? `Check-out: ${checkOutDate}.` : ""} Extras: ${extras}. Deposit: ${deposit}. Balance: ${balance}.`,
+      html: `
+        <div style="font-family: Arial, sans-serif;">
+          <h2>Thank you, ${name}</h2>
+          <p>You've successfully checked out.</p>
+          <ul>
+            <li><b>Room:</b> ${roomNumber}</li>
+            ${checkOutDate ? `<li><b>Check-out:</b> ${checkOutDate}</li>` : ""}
+            <li><b>Extras:</b> ${extras}</li>
+            <li><b>Deposit:</b> ${deposit}</li>
+            <li><b>Balance:</b> ${balance}</li>
+          </ul>
+          <p>We'd love to host you again!</p>
+        </div>
+      `,
+    });
+
+    await event.data!.after.ref.update({
+      checkOutEmailSent: true,
+      checkOutEmailSentAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+  }
+);
 
 export const markOverdueatNoon = onSchedule(
   {
@@ -45,11 +185,11 @@ export const markOverdueatNoon = onSchedule(
 export const sendReceipt = https.onRequest(
   {
     region: "asia-southeast1",
-    secrets: [CLIENT_ID, CLIENT_SECRET, REFRESH_TOKEN],
+    secrets: ["SENDGRID_API_KEY"],
     timeoutSeconds: 60,
     cors: true,
   },
-  async (req, res): Promise<void> => {
+  async (req, res) => {
     if (req.method !== "POST") {
       res.status(405).send({ success: false, error: "Only POST allowed" });
       return;
@@ -62,47 +202,21 @@ export const sendReceipt = https.onRequest(
     }
 
     try {
-      // Lazy-import googleapis inside the function
-      const { google } = await import("googleapis");
+      const apiKey = process.env.SENDGRID_API_KEY;
+      if (!apiKey) throw new Error("Missing SendGrid key");
 
-      // Lazy-load secret values
-      const clientId = (await CLIENT_ID.value()).trim();
-      const clientSecret = (await CLIENT_SECRET.value()).trim();
-      const refreshToken = (await REFRESH_TOKEN.value()).trim();
+      sgMail.setApiKey(apiKey);
 
-      console.log("clientId suffix:", clientId.slice(-32));
-      console.log("clientSecret length:", clientSecret.length);
-
-      const REDIRECT_URI = "https://developers.google.com/oauthplayground";
-
-      const oAuth2Client = new google.auth.OAuth2(clientId, clientSecret, REDIRECT_URI);
-      oAuth2Client.setCredentials({ refresh_token: refreshToken });
-
-      const gmail = google.gmail({ version: "v1", auth: oAuth2Client });
-
-      const message = [
-        `From: "Hotel" <${SENDER_EMAIL}>`,
-        `To: ${to}`,
-        `Subject: ${subject}`,
-        "Content-Type: text/html; charset=utf-8",
-        "",
+      await sgMail.send({
+        to,
+        from: "chillrigel05@gmail.com", // verified sender
+        subject,
         html,
-      ].join("\n");
-
-      const encodedMessage = Buffer.from(message)
-        .toString("base64")
-        .replace(/\+/g, "-")
-        .replace(/\//g, "_")
-        .replace(/=+$/, "");
-
-      await gmail.users.messages.send({
-        userId: "me",
-        requestBody: { raw: encodedMessage },
       });
 
       res.status(200).send({ success: true });
     } catch (error) {
-      console.error("Gmail API error:", error);
+      console.error("SendGrid error:", error);
       res.status(500).send({ success: false, error });
     }
   }
