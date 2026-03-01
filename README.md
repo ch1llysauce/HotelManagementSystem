@@ -51,6 +51,7 @@ Supports:
 - Admin
 - Manager
 - Staff
+- Housekeeping
 
 Firestore security rules enforce:
 - Role-based document permissions
