@@ -185,12 +185,12 @@ Firestore rules enforce:
 ---
 
 ## Database Structure
-users/
-guests/
-archivedGuests/
-rooms/
-payments/
-logs/
+users/,
+guests/,
+archivedGuests/,
+rooms/,
+payments/,
+logs/,
 settings/
 
 ---
