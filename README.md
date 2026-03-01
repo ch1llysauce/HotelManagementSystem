@@ -226,8 +226,9 @@ Firebase Setup
     firebase deploy --only functions
 5. Configure SendGrid secret:
     firebase functions:secrets:set SENDGRID_API_KEY
+```
 
-Portfolio Value
+## Portfolio Value
 This project demonstrates:
   - Full-stack system architecture
   - Secure backend rule design
